@@ -31,6 +31,8 @@ def create_admin_portfolio(db: Session, payload: AdminPortfolioCreate) -> Portfo
     before_floorplan_y = data.pop("before_floorplan_y", None)
     after_floorplan_x = data.pop("after_floorplan_x", None)
     after_floorplan_y = data.pop("after_floorplan_y", None)
+    before_image_items = data.pop("before_image_items", None) or []
+    after_image_items = data.pop("after_image_items", None) or []
 
     row = Portfolio(**data)
     _maybe_mark_portfolio_published(row, payload.status)
@@ -41,7 +43,22 @@ def create_admin_portfolio(db: Session, payload: AdminPortfolioCreate) -> Portfo
     next_image_id = db.execute(select(func.coalesce(func.max(PortfolioImage.id), 0))).scalar_one() + 1
     images: list[PortfolioImage] = []
 
-    if before_image_url:
+    if before_image_items:
+        for item in before_image_items:
+            images.append(
+                PortfolioImage(
+                    id=next_image_id,
+                    portfolio_id=row.id,
+                    kind="before",
+                    image_url=item["image_url"],
+                    sort_order=item.get("sort_order", 1),
+                    area_label=item.get("area_label"),
+                    floorplan_x=item.get("floorplan_x"),
+                    floorplan_y=item.get("floorplan_y"),
+                )
+            )
+            next_image_id += 1
+    elif before_image_url:
         images.append(
             PortfolioImage(
                 id=next_image_id,
@@ -56,7 +73,22 @@ def create_admin_portfolio(db: Session, payload: AdminPortfolioCreate) -> Portfo
         )
         next_image_id += 1
 
-    if after_image_url:
+    if after_image_items:
+        for item in after_image_items:
+            images.append(
+                PortfolioImage(
+                    id=next_image_id,
+                    portfolio_id=row.id,
+                    kind="after",
+                    image_url=item["image_url"],
+                    sort_order=item.get("sort_order", 1),
+                    area_label=item.get("area_label"),
+                    floorplan_x=item.get("floorplan_x"),
+                    floorplan_y=item.get("floorplan_y"),
+                )
+            )
+            next_image_id += 1
+    elif after_image_url:
         images.append(
             PortfolioImage(
                 id=next_image_id,

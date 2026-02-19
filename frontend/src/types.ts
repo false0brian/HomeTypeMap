@@ -123,6 +123,8 @@ export interface AdminPortfolioCreateInput {
   before_floorplan_y?: number;
   after_floorplan_x?: number;
   after_floorplan_y?: number;
+  before_image_items?: AdminPortfolioImageInput[];
+  after_image_items?: AdminPortfolioImageInput[];
   work_scope: string;
   style: string;
   tags?: string;
@@ -131,6 +133,14 @@ export interface AdminPortfolioCreateInput {
   budget_max_krw?: number;
   duration_days?: number;
   status: PublishStatus;
+}
+
+export interface AdminPortfolioImageInput {
+  image_url: string;
+  sort_order?: number;
+  area_label?: string;
+  floorplan_x?: number;
+  floorplan_y?: number;
 }
 
 export interface AdminBlogPost {

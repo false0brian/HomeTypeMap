@@ -10,6 +10,14 @@ class PublishStatus(str, Enum):
     published = "published"
 
 
+class AdminPortfolioImageInput(BaseModel):
+    image_url: str = Field(..., min_length=1, max_length=500)
+    sort_order: int = Field(default=1, ge=1)
+    area_label: str | None = Field(default=None, max_length=80)
+    floorplan_x: int | None = Field(default=None, ge=0, le=100)
+    floorplan_y: int | None = Field(default=None, ge=0, le=100)
+
+
 class AdminPortfolioBase(BaseModel):
     complex_id: int
     unit_type_id: int
@@ -24,6 +32,8 @@ class AdminPortfolioBase(BaseModel):
     before_floorplan_y: int | None = Field(default=None, ge=0, le=100)
     after_floorplan_x: int | None = Field(default=None, ge=0, le=100)
     after_floorplan_y: int | None = Field(default=None, ge=0, le=100)
+    before_image_items: list[AdminPortfolioImageInput] | None = None
+    after_image_items: list[AdminPortfolioImageInput] | None = None
     work_scope: str = Field(..., min_length=1, max_length=80)
     style: str = Field(..., min_length=1, max_length=80)
     budget_min_krw: int | None = Field(default=None, ge=0)

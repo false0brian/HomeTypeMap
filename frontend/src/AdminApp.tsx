@@ -12,11 +12,25 @@ import type { AdminBlogPost, AdminPortfolio, PublishStatus } from "./types";
 
 const DEFAULT_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY ?? "";
 
-const SAMPLE_BEFORE = "/samples/portfolio-before-1.svg";
-const SAMPLE_AFTER = "/samples/portfolio-after-1.svg";
+const SAMPLE_BEFORE_1 = "/samples/portfolio-before-1.svg";
+const SAMPLE_AFTER_1 = "/samples/portfolio-after-1.svg";
+const SAMPLE_BEFORE_2 = "/samples/portfolio-before-2.svg";
+const SAMPLE_AFTER_2 = "/samples/portfolio-after-2.svg";
 const SAMPLE_FLOORPLAN = "/samples/floorplan-59a.svg";
 
-type PinTarget = "before" | "after";
+type PinTarget = { rowIndex: number; kind: "before" | "after" };
+
+type ImagePairForm = {
+  sort_order: string;
+  before_url: string;
+  after_url: string;
+  before_area_label: string;
+  after_area_label: string;
+  before_x: string;
+  before_y: string;
+  after_x: string;
+  after_y: string;
+};
 
 function safeNum(v: string): number | undefined {
   const t = v.trim();
@@ -25,26 +39,33 @@ function safeNum(v: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+function makePair(order: number): ImagePairForm {
+  return {
+    sort_order: String(order),
+    before_url: "",
+    after_url: "",
+    before_area_label: "",
+    after_area_label: "",
+    before_x: "",
+    before_y: "",
+    after_x: "",
+    after_y: "",
+  };
+}
+
 export default function AdminApp() {
   const [adminKey, setAdminKey] = useState(DEFAULT_ADMIN_KEY);
   const [status, setStatus] = useState("관리자 콘솔 준비 중");
   const [portfolios, setPortfolios] = useState<AdminPortfolio[]>([]);
   const [posts, setPosts] = useState<AdminBlogPost[]>([]);
-  const [pinTarget, setPinTarget] = useState<PinTarget>("before");
+  const [pinTarget, setPinTarget] = useState<PinTarget>({ rowIndex: 0, kind: "before" });
+  const [imagePairs, setImagePairs] = useState<ImagePairForm[]>([makePair(1)]);
   const [portfolioForm, setPortfolioForm] = useState({
     complex_id: "101",
     unit_type_id: "1001",
     vendor_id: "501",
     title: "",
     unit_floorplan_url: "",
-    before_image_url: "",
-    after_image_url: "",
-    before_area_label: "",
-    after_area_label: "",
-    before_floorplan_x: "",
-    before_floorplan_y: "",
-    after_floorplan_x: "",
-    after_floorplan_y: "",
     work_scope: "partial",
     style: "minimal",
     summary: "",
@@ -86,14 +107,25 @@ export default function AdminApp() {
     void refreshAll();
   }, []);
 
-  const imagePreview = useMemo(
-    () => ({
-      before: portfolioForm.before_image_url.trim() || SAMPLE_BEFORE,
-      after: portfolioForm.after_image_url.trim() || SAMPLE_AFTER,
-      floorplan: portfolioForm.unit_floorplan_url.trim() || SAMPLE_FLOORPLAN,
-    }),
-    [portfolioForm.before_image_url, portfolioForm.after_image_url, portfolioForm.unit_floorplan_url],
+  const floorplanPreview = useMemo(
+    () => portfolioForm.unit_floorplan_url.trim() || SAMPLE_FLOORPLAN,
+    [portfolioForm.unit_floorplan_url],
   );
+
+  function updatePair(index: number, patch: Partial<ImagePairForm>) {
+    setImagePairs((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  }
+
+  function addPairRow() {
+    setImagePairs((prev) => [...prev, makePair(prev.length + 1)]);
+  }
+
+  function removePairRow(index: number) {
+    setImagePairs((prev) => {
+      if (prev.length === 1) return prev;
+      return prev.filter((_, i) => i !== index).map((row, i) => ({ ...row, sort_order: String(i + 1) }));
+    });
+  }
 
   function onPickFloorplanPosition(e: MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -102,30 +134,41 @@ export default function AdminApp() {
     const safeX = String(Math.max(0, Math.min(100, x)));
     const safeY = String(Math.max(0, Math.min(100, y)));
 
-    if (pinTarget === "before") {
-      setPortfolioForm((prev) => ({ ...prev, before_floorplan_x: safeX, before_floorplan_y: safeY }));
-      return;
-    }
-    setPortfolioForm((prev) => ({ ...prev, after_floorplan_x: safeX, after_floorplan_y: safeY }));
+    updatePair(
+      pinTarget.rowIndex,
+      pinTarget.kind === "before" ? { before_x: safeX, before_y: safeY } : { after_x: safeX, after_y: safeY },
+    );
   }
 
   async function onCreatePortfolio(e: FormEvent) {
     e.preventDefault();
     try {
+      const beforeItems = imagePairs
+        .filter((row) => row.before_url.trim())
+        .map((row) => ({
+          image_url: row.before_url.trim(),
+          sort_order: safeNum(row.sort_order),
+          area_label: row.before_area_label.trim() || undefined,
+          floorplan_x: safeNum(row.before_x),
+          floorplan_y: safeNum(row.before_y),
+        }));
+
+      const afterItems = imagePairs
+        .filter((row) => row.after_url.trim())
+        .map((row) => ({
+          image_url: row.after_url.trim(),
+          sort_order: safeNum(row.sort_order),
+          area_label: row.after_area_label.trim() || undefined,
+          floorplan_x: safeNum(row.after_x),
+          floorplan_y: safeNum(row.after_y),
+        }));
+
       await adminCreatePortfolio(adminKey.trim(), {
         complex_id: Number(portfolioForm.complex_id),
         unit_type_id: Number(portfolioForm.unit_type_id),
         vendor_id: Number(portfolioForm.vendor_id),
         title: portfolioForm.title,
         unit_floorplan_url: portfolioForm.unit_floorplan_url.trim() || undefined,
-        before_image_url: portfolioForm.before_image_url.trim() || undefined,
-        after_image_url: portfolioForm.after_image_url.trim() || undefined,
-        before_area_label: portfolioForm.before_area_label.trim() || undefined,
-        after_area_label: portfolioForm.after_area_label.trim() || undefined,
-        before_floorplan_x: safeNum(portfolioForm.before_floorplan_x),
-        before_floorplan_y: safeNum(portfolioForm.before_floorplan_y),
-        after_floorplan_x: safeNum(portfolioForm.after_floorplan_x),
-        after_floorplan_y: safeNum(portfolioForm.after_floorplan_y),
         work_scope: portfolioForm.work_scope,
         style: portfolioForm.style,
         summary: portfolioForm.summary.trim() || undefined,
@@ -133,8 +176,11 @@ export default function AdminApp() {
         budget_min_krw: safeNum(portfolioForm.budget_min_krw),
         budget_max_krw: safeNum(portfolioForm.budget_max_krw),
         duration_days: safeNum(portfolioForm.duration_days),
+        before_image_items: beforeItems,
+        after_image_items: afterItems,
         status: portfolioForm.status,
       });
+
       setPortfolioForm((prev) => ({
         ...prev,
         title: "",
@@ -190,15 +236,32 @@ export default function AdminApp() {
     setPortfolioForm((prev) => ({
       ...prev,
       unit_floorplan_url: SAMPLE_FLOORPLAN,
-      before_image_url: SAMPLE_BEFORE,
-      after_image_url: SAMPLE_AFTER,
-      before_area_label: "거실",
-      after_area_label: "거실",
-      before_floorplan_x: "35",
-      before_floorplan_y: "62",
-      after_floorplan_x: "35",
-      after_floorplan_y: "62",
     }));
+    setImagePairs([
+      {
+        sort_order: "1",
+        before_url: SAMPLE_BEFORE_1,
+        after_url: SAMPLE_AFTER_1,
+        before_area_label: "거실",
+        after_area_label: "거실",
+        before_x: "35",
+        before_y: "62",
+        after_x: "35",
+        after_y: "62",
+      },
+      {
+        sort_order: "2",
+        before_url: SAMPLE_BEFORE_2,
+        after_url: SAMPLE_AFTER_2,
+        before_area_label: "주방",
+        after_area_label: "주방",
+        before_x: "68",
+        before_y: "46",
+        after_x: "68",
+        after_y: "46",
+      },
+    ]);
+    setPinTarget({ rowIndex: 0, kind: "before" });
   }
 
   return (
@@ -225,64 +288,59 @@ export default function AdminApp() {
             <input value={portfolioForm.unit_type_id} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, unit_type_id: e.target.value }))} placeholder="unit_type_id" />
             <input value={portfolioForm.vendor_id} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, vendor_id: e.target.value }))} placeholder="vendor_id" />
             <input value={portfolioForm.title} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="포트폴리오 제목" required />
-
-            <input
-              value={portfolioForm.unit_floorplan_url}
-              onChange={(e) => setPortfolioForm((prev) => ({ ...prev, unit_floorplan_url: e.target.value }))}
-              placeholder="unit_floorplan_url"
-            />
+            <input value={portfolioForm.unit_floorplan_url} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, unit_floorplan_url: e.target.value }))} placeholder="unit_floorplan_url" />
 
             <div className="admin-inline">
-              <input value={portfolioForm.before_image_url} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, before_image_url: e.target.value }))} placeholder="before_image_url" />
-              <input value={portfolioForm.after_image_url} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, after_image_url: e.target.value }))} placeholder="after_image_url" />
-              <button type="button" className="ghost-btn" onClick={fillSampleImages}>샘플 이미지 채우기</button>
+              <button type="button" className="ghost-btn" onClick={fillSampleImages}>다중 샘플 매핑 채우기</button>
+              <button type="button" className="ghost-btn" onClick={addPairRow}>매핑 행 추가</button>
             </div>
 
-            <div className="admin-inline">
-              <input value={portfolioForm.before_area_label} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, before_area_label: e.target.value }))} placeholder="before_area_label (예: 거실)" />
-              <input value={portfolioForm.after_area_label} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, after_area_label: e.target.value }))} placeholder="after_area_label (예: 주방)" />
-            </div>
+            {imagePairs.map((row, i) => (
+              <div key={i} className="pair-row">
+                <div className="pair-head">
+                  <strong>매핑 #{i + 1}</strong>
+                  <button type="button" className="ghost-btn" onClick={() => removePairRow(i)}>삭제</button>
+                </div>
+                <div className="admin-inline">
+                  <input value={row.sort_order} onChange={(e) => updatePair(i, { sort_order: e.target.value })} placeholder="sort_order" />
+                  <input value={row.before_url} onChange={(e) => updatePair(i, { before_url: e.target.value })} placeholder="before_image_url" />
+                  <input value={row.after_url} onChange={(e) => updatePair(i, { after_url: e.target.value })} placeholder="after_image_url" />
+                </div>
+                <div className="admin-inline">
+                  <input value={row.before_area_label} onChange={(e) => updatePair(i, { before_area_label: e.target.value })} placeholder="before_area_label" />
+                  <input value={row.after_area_label} onChange={(e) => updatePair(i, { after_area_label: e.target.value })} placeholder="after_area_label" />
+                </div>
+                <div className="admin-inline">
+                  <input value={row.before_x} onChange={(e) => updatePair(i, { before_x: e.target.value })} placeholder="before_x" />
+                  <input value={row.before_y} onChange={(e) => updatePair(i, { before_y: e.target.value })} placeholder="before_y" />
+                  <input value={row.after_x} onChange={(e) => updatePair(i, { after_x: e.target.value })} placeholder="after_x" />
+                  <input value={row.after_y} onChange={(e) => updatePair(i, { after_y: e.target.value })} placeholder="after_y" />
+                </div>
+                <div className="admin-inline">
+                  <button type="button" className={pinTarget.rowIndex === i && pinTarget.kind === "before" ? "pin-tab active" : "pin-tab"} onClick={() => setPinTarget({ rowIndex: i, kind: "before" })}>#{i + 1} Before 핀</button>
+                  <button type="button" className={pinTarget.rowIndex === i && pinTarget.kind === "after" ? "pin-tab active" : "pin-tab"} onClick={() => setPinTarget({ rowIndex: i, kind: "after" })}>#{i + 1} After 핀</button>
+                </div>
+              </div>
+            ))}
 
             <div className="admin-pin-toolbar">
-              <button type="button" className={pinTarget === "before" ? "pin-tab active" : "pin-tab"} onClick={() => setPinTarget("before")}>Before 핀 찍기</button>
-              <button type="button" className={pinTarget === "after" ? "pin-tab active" : "pin-tab"} onClick={() => setPinTarget("after")}>After 핀 찍기</button>
-              <span>평면도 클릭으로 좌표 입력</span>
+              <span>활성 대상: #{pinTarget.rowIndex + 1} {pinTarget.kind.toUpperCase()} · 평면도 클릭으로 핀 좌표 입력</span>
             </div>
 
             <div className="admin-floorplan-picker" onClick={onPickFloorplanPosition}>
-              <img src={imagePreview.floorplan} alt="floorplan picker" />
-              {portfolioForm.before_floorplan_x && portfolioForm.before_floorplan_y ? (
-                <span className="picker-pin before" style={{ left: `${portfolioForm.before_floorplan_x}%`, top: `${portfolioForm.before_floorplan_y}%` }}>B</span>
-              ) : null}
-              {portfolioForm.after_floorplan_x && portfolioForm.after_floorplan_y ? (
-                <span className="picker-pin after" style={{ left: `${portfolioForm.after_floorplan_x}%`, top: `${portfolioForm.after_floorplan_y}%` }}>A</span>
-              ) : null}
-            </div>
-
-            <div className="admin-inline">
-              <input value={portfolioForm.before_floorplan_x} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, before_floorplan_x: e.target.value }))} placeholder="before_x (0~100)" />
-              <input value={portfolioForm.before_floorplan_y} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, before_floorplan_y: e.target.value }))} placeholder="before_y (0~100)" />
-            </div>
-            <div className="admin-inline">
-              <input value={portfolioForm.after_floorplan_x} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, after_floorplan_x: e.target.value }))} placeholder="after_x (0~100)" />
-              <input value={portfolioForm.after_floorplan_y} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, after_floorplan_y: e.target.value }))} placeholder="after_y (0~100)" />
-            </div>
-
-            <div className="admin-image-preview">
-              <figure>
-                <img src={imagePreview.before} alt="before preview" />
-                <figcaption>Before</figcaption>
-              </figure>
-              <figure>
-                <img src={imagePreview.after} alt="after preview" />
-                <figcaption>After</figcaption>
-              </figure>
+              <img src={floorplanPreview} alt="floorplan picker" />
+              {imagePairs.map((row, i) => (
+                <div key={`pin-${i}`}>
+                  {row.before_x && row.before_y ? <span className="picker-pin before" style={{ left: `${row.before_x}%`, top: `${row.before_y}%` }}>B{i + 1}</span> : null}
+                  {row.after_x && row.after_y ? <span className="picker-pin after" style={{ left: `${row.after_x}%`, top: `${row.after_y}%` }}>A{i + 1}</span> : null}
+                </div>
+              ))}
             </div>
 
             <input value={portfolioForm.work_scope} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, work_scope: e.target.value }))} placeholder="work_scope" required />
             <input value={portfolioForm.style} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, style: e.target.value }))} placeholder="style" required />
             <textarea value={portfolioForm.summary} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, summary: e.target.value }))} placeholder="요약 설명" rows={3} />
-            <input value={portfolioForm.tags} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, tags: e.target.value }))} placeholder="태그 (예: 우드톤,수납,주방)" />
+            <input value={portfolioForm.tags} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, tags: e.target.value }))} placeholder="태그" />
             <div className="admin-inline">
               <input type="number" value={portfolioForm.budget_min_krw} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, budget_min_krw: e.target.value }))} placeholder="budget_min_krw" />
               <input type="number" value={portfolioForm.budget_max_krw} onChange={(e) => setPortfolioForm((prev) => ({ ...prev, budget_max_krw: e.target.value }))} placeholder="budget_max_krw" />
@@ -305,8 +363,8 @@ export default function AdminApp() {
                 </p>
                 {item.summary ? <p className="admin-card-summary">{item.summary}</p> : null}
                 <div className="admin-thumb-row">
-                  <img src={item.before_image_url || SAMPLE_BEFORE} alt="before" />
-                  <img src={item.after_image_url || SAMPLE_AFTER} alt="after" />
+                  <img src={item.before_image_url || SAMPLE_BEFORE_1} alt="before" />
+                  <img src={item.after_image_url || SAMPLE_AFTER_1} alt="after" />
                 </div>
                 <button onClick={() => void publishPortfolio(item.portfolio_id)}>발행 처리</button>
               </article>
