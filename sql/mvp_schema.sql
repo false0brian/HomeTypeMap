@@ -81,6 +81,9 @@ CREATE TABLE IF NOT EXISTS portfolio_images (
   image_url VARCHAR(500) NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   caption VARCHAR(200),
+  area_label VARCHAR(80),
+  floorplan_x INT,
+  floorplan_y INT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS ix_portfolio_images_portfolio ON portfolio_images (portfolio_id);

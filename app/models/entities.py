@@ -179,6 +179,9 @@ class PortfolioImage(Base):
     image_url: Mapped[str] = mapped_column(String(500), nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     caption: Mapped[str | None] = mapped_column(String(200))
+    area_label: Mapped[str | None] = mapped_column(String(80))
+    floorplan_x: Mapped[int | None] = mapped_column(Integer)  # 0~100 (%)
+    floorplan_y: Mapped[int | None] = mapped_column(Integer)  # 0~100 (%)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     portfolio: Mapped[Portfolio] = relationship(back_populates="images")

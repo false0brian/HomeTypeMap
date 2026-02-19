@@ -57,15 +57,23 @@ SEED_SQL = [
     ON CONFLICT DO NOTHING
     """,
     """
-    INSERT INTO portfolio_images (
-      id, portfolio_id, kind, image_url, sort_order, caption
+    INSERT INTO floor_plans (
+      id, unit_type_id, image_url, structure_tags, embedding
     ) VALUES
-      (91001, 9001, 'before', '/samples/portfolio-before-1.svg', 1, '리모델링 전 거실'),
-      (91002, 9001, 'after', '/samples/portfolio-after-1.svg', 1, '리모델링 후 거실'),
-      (91003, 9001, 'before', '/samples/portfolio-before-2.svg', 2, '리모델링 전 주방'),
-      (91004, 9001, 'after', '/samples/portfolio-after-2.svg', 2, '리모델링 후 주방'),
-      (92001, 9002, 'before', '/samples/portfolio-before-1.svg', 1, '부분공사 전'),
-      (92002, 9002, 'after', '/samples/portfolio-after-1.svg', 1, '부분공사 후')
+      (3001, 1001, '/samples/floorplan-59a.svg', '59A,판상형,3룸', NULL),
+      (3002, 1002, '/samples/floorplan-84b.svg', '84B,타워형,4룸', NULL)
+    ON CONFLICT DO NOTHING
+    """,
+    """
+    INSERT INTO portfolio_images (
+      id, portfolio_id, kind, image_url, sort_order, caption, area_label, floorplan_x, floorplan_y
+    ) VALUES
+      (91001, 9001, 'before', '/samples/portfolio-before-1.svg', 1, '리모델링 전 거실', '거실', 35, 62),
+      (91002, 9001, 'after', '/samples/portfolio-after-1.svg', 1, '리모델링 후 거실', '거실', 35, 62),
+      (91003, 9001, 'before', '/samples/portfolio-before-2.svg', 2, '리모델링 전 주방', '주방', 68, 46),
+      (91004, 9001, 'after', '/samples/portfolio-after-2.svg', 2, '리모델링 후 주방', '주방', 68, 46),
+      (92001, 9002, 'before', '/samples/portfolio-before-1.svg', 1, '부분공사 전', '욕실', 72, 58),
+      (92002, 9002, 'after', '/samples/portfolio-after-1.svg', 1, '부분공사 후', '욕실', 72, 58)
     ON CONFLICT DO NOTHING
     """,
 ]

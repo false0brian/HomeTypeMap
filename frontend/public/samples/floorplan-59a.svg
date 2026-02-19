@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
+  <rect width="900" height="600" fill="#f2f5f2"/>
+  <rect x="80" y="80" width="740" height="440" fill="#ffffff" stroke="#8ea094" stroke-width="8"/>
+  <line x1="420" y1="80" x2="420" y2="520" stroke="#8ea094" stroke-width="6"/>
+  <line x1="80" y1="300" x2="420" y2="300" stroke="#8ea094" stroke-width="6"/>
+  <line x1="420" y1="240" x2="820" y2="240" stroke="#8ea094" stroke-width="6"/>
+  <text x="230" y="220" font-size="30" text-anchor="middle" fill="#4f6156">거실</text>
+  <text x="230" y="430" font-size="30" text-anchor="middle" fill="#4f6156">침실</text>
+  <text x="620" y="190" font-size="30" text-anchor="middle" fill="#4f6156">주방</text>
+  <text x="620" y="420" font-size="30" text-anchor="middle" fill="#4f6156">욕실/현관</text>
+  <text x="450" y="560" font-size="26" text-anchor="middle" fill="#6e8074">59A Floor Plan</text>
+</svg>

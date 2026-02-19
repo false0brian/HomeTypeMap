@@ -16,6 +16,7 @@ import type {
   ComplexPin,
   PortfolioCard,
   PortfolioFilters,
+  PortfolioImageItem,
   UnitTypeChip,
   WorkScopeType,
 } from "./types";
@@ -242,9 +243,7 @@ export default function App() {
         if (cancelled) return;
         setPortfolios(data.items);
         setStatus(`조회 완료: ${data.total}건`);
-        if (highlightList) {
-          cardsRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-        }
+        if (highlightList) cardsRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       } catch (e) {
         if (cancelled) return;
         setStatus(e instanceof Error ? e.message : "포트폴리오를 불러오지 못했습니다.");
@@ -279,6 +278,22 @@ export default function App() {
     if (!selectedComplex) return null;
     return complexes.find((x) => x.complex_id === selectedComplex.complex_id)?.distance_m ?? null;
   }, [complexes, selectedComplex]);
+
+  function beforeItemsOf(card: PortfolioCard): PortfolioImageItem[] {
+    if (card.before_images && card.before_images.length > 0) return card.before_images;
+    return card.before_image_url ? [{ image_url: card.before_image_url, sort_order: 1 }] : [];
+  }
+
+  function afterItemsOf(card: PortfolioCard): PortfolioImageItem[] {
+    if (card.after_images && card.after_images.length > 0) return card.after_images;
+    return card.after_image_url ? [{ image_url: card.after_image_url, sort_order: 1 }] : [];
+  }
+
+  function openCompareModal(card: PortfolioCard) {
+    setModalCard(card);
+    setBeforeSlideIndex(0);
+    setAfterSlideIndex(0);
+  }
 
   async function handleSelectComplex(complexId: number, fromMap = false) {
     setStatus("단지 정보를 불러오는 중입니다.");
@@ -355,9 +370,7 @@ export default function App() {
           const longitude = pos.coords.longitude;
 
           setUserLocation({ latitude, longitude });
-          if (mapRef.current) {
-            mapRef.current.setView([latitude, longitude], Math.max(14, mapRef.current.getZoom()));
-          }
+          if (mapRef.current) mapRef.current.setView([latitude, longitude], Math.max(14, mapRef.current.getZoom()));
 
           setLoadingMap(true);
           try {
@@ -396,7 +409,6 @@ export default function App() {
       setStatus("사용자 키를 입력하세요.");
       return;
     }
-
     try {
       await saveFavorite(userKey.trim(), portfolioId);
       setStatus("즐겨찾기에 저장했습니다.");
@@ -410,7 +422,6 @@ export default function App() {
       setStatus("사용자 키를 입력하세요.");
       return;
     }
-
     try {
       await requestQuote({
         userKey: userKey.trim(),
@@ -441,21 +452,8 @@ export default function App() {
     setUserLocation(null);
   }
 
-  function beforeImagesOf(card: PortfolioCard): string[] {
-    if (card.before_images && card.before_images.length > 0) return card.before_images;
-    return card.before_image_url ? [card.before_image_url] : [];
-  }
-
-  function afterImagesOf(card: PortfolioCard): string[] {
-    if (card.after_images && card.after_images.length > 0) return card.after_images;
-    return card.after_image_url ? [card.after_image_url] : [];
-  }
-
-  function openCompareModal(card: PortfolioCard) {
-    setModalCard(card);
-    setBeforeSlideIndex(0);
-    setAfterSlideIndex(0);
-  }
+  const currentBefore = modalCard ? beforeItemsOf(modalCard)[beforeSlideIndex] : null;
+  const currentAfter = modalCard ? afterItemsOf(modalCard)[afterSlideIndex] : null;
 
   return (
     <div className="page">
@@ -494,12 +492,7 @@ export default function App() {
         </label>
         <label>
           예산 상한(원)
-          <input
-            type="number"
-            placeholder="50000000"
-            value={budgetMaxDraft}
-            onChange={(e) => setBudgetMaxDraft(e.target.value)}
-          />
+          <input type="number" placeholder="50000000" value={budgetMaxDraft} onChange={(e) => setBudgetMaxDraft(e.target.value)} />
         </label>
         <div className="filter-buttons">
           <button className="apply" onClick={applyFilters}>필터 적용</button>
@@ -536,13 +529,7 @@ export default function App() {
               <option value={5000}>5km</option>
             </select>
             {mapMode === "nearby" ? <button onClick={backToBoundsMode}>일반 탐색</button> : null}
-            {loadingMap ? (
-              <span>지도 로딩 중...</span>
-            ) : (
-              <span>
-                {mapMode === "nearby" ? "근처 보기" : "기본 보기"} · 클러스터 {clusters.length} / 핀 {complexes.length}
-              </span>
-            )}
+            {loadingMap ? <span>지도 로딩 중...</span> : <span>{mapMode === "nearby" ? "근처 보기" : "기본 보기"} · 클러스터 {clusters.length} / 핀 {complexes.length}</span>}
           </div>
           <div className="map-canvas" ref={mapContainerRef} />
         </section>
@@ -552,17 +539,19 @@ export default function App() {
             <h2>{selectedComplex?.name ?? "단지를 선택하세요"}</h2>
             <p>{selectedComplex?.address ?? "지도에서 단지 핀을 클릭하면 상세가 열립니다."}</p>
             {selectedDistance != null ? <p className="distance-pill">현재 위치에서 약 {Math.round(selectedDistance)}m</p> : null}
+            {selectedUnitType?.representative_floor_plan_url ? (
+              <div className="floorplan-preview">
+                <img src={selectedUnitType.representative_floor_plan_url} alt="대표 평면도" />
+                <span>선택 평형 대표 평면도</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="type-chips">
             {unitTypeButtons.map((unit) => {
               const active = selectedUnitType?.unit_type_id === unit.unit_type_id;
               return (
-                <button
-                  key={unit.unit_type_id}
-                  className={active ? "chip active" : "chip"}
-                  onClick={() => setSelectedUnitType(unit)}
-                >
+                <button key={unit.unit_type_id} className={active ? "chip active" : "chip"} onClick={() => setSelectedUnitType(unit)}>
                   {Math.round(unit.exclusive_area_m2)}
                   {unit.type_code ? unit.type_code : ""}
                   <em>{unit.portfolio_count}</em>
@@ -578,18 +567,10 @@ export default function App() {
               <article key={card.portfolio_id} className="portfolio-card">
                 <div className="thumb-grid">
                   <div className="thumb-item">
-                    {beforeImagesOf(card)[0] ? (
-                      <img src={beforeImagesOf(card)[0]} alt={`${card.title} before`} loading="lazy" />
-                    ) : (
-                      <span>Before 없음</span>
-                    )}
+                    {beforeItemsOf(card)[0] ? <img src={beforeItemsOf(card)[0].image_url} alt={`${card.title} before`} loading="lazy" /> : <span>Before 없음</span>}
                   </div>
                   <div className="thumb-item">
-                    {afterImagesOf(card)[0] ? (
-                      <img src={afterImagesOf(card)[0]} alt={`${card.title} after`} loading="lazy" />
-                    ) : (
-                      <span>After 없음</span>
-                    )}
+                    {afterItemsOf(card)[0] ? <img src={afterItemsOf(card)[0].image_url} alt={`${card.title} after`} loading="lazy" /> : <span>After 없음</span>}
                   </div>
                 </div>
                 <h3>{card.title}</h3>
@@ -599,15 +580,9 @@ export default function App() {
                   <span>{card.work_scope}</span>
                 </div>
                 <div className="actions">
-                  <button className="ghost" onClick={() => openCompareModal(card)}>
-                    비교 보기
-                  </button>
-                  <button className="ghost" onClick={() => onFavorite(card.portfolio_id)}>
-                    저장
-                  </button>
-                  <button className="solid" onClick={() => onQuote(card)}>
-                    문의
-                  </button>
+                  <button className="ghost" onClick={() => openCompareModal(card)}>비교 보기</button>
+                  <button className="ghost" onClick={() => onFavorite(card.portfolio_id)}>저장</button>
+                  <button className="solid" onClick={() => onQuote(card)}>문의</button>
                 </div>
               </article>
             ))}
@@ -626,68 +601,49 @@ export default function App() {
             <div className="compare-body">
               <div className="compare-pane">
                 <p>Before</p>
-                {beforeImagesOf(modalCard).length > 0 ? (
+                {beforeItemsOf(modalCard).length > 0 ? (
                   <>
-                    <img
-                      src={beforeImagesOf(modalCard)[beforeSlideIndex]}
-                      alt="before slide"
-                      className="compare-image"
-                    />
+                    <img src={beforeItemsOf(modalCard)[beforeSlideIndex].image_url} alt="before slide" className="compare-image" />
+                    {currentBefore?.area_label ? <p className="compare-caption">위치: {currentBefore.area_label}</p> : null}
                     <div className="compare-controls">
-                      <button
-                        onClick={() =>
-                          setBeforeSlideIndex((idx) =>
-                            idx === 0 ? beforeImagesOf(modalCard).length - 1 : idx - 1,
-                          )
-                        }
-                      >
-                        이전
-                      </button>
-                      <span>
-                        {beforeSlideIndex + 1} / {beforeImagesOf(modalCard).length}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setBeforeSlideIndex((idx) =>
-                            idx === beforeImagesOf(modalCard).length - 1 ? 0 : idx + 1,
-                          )
-                        }
-                      >
-                        다음
-                      </button>
+                      <button onClick={() => setBeforeSlideIndex((idx) => (idx === 0 ? beforeItemsOf(modalCard).length - 1 : idx - 1))}>이전</button>
+                      <span>{beforeSlideIndex + 1} / {beforeItemsOf(modalCard).length}</span>
+                      <button onClick={() => setBeforeSlideIndex((idx) => (idx === beforeItemsOf(modalCard).length - 1 ? 0 : idx + 1))}>다음</button>
                     </div>
                   </>
                 ) : (
                   <p className="state">Before 이미지 없음</p>
                 )}
               </div>
+
+              <div className="compare-pane floorplan-pane">
+                <p>평면도 위치</p>
+                {modalCard.unit_type_floor_plan_url ? (
+                  <div className="floorplan-map">
+                    <img src={modalCard.unit_type_floor_plan_url} alt="floor plan" className="compare-image" />
+                    {currentBefore?.floorplan_x != null && currentBefore?.floorplan_y != null ? (
+                      <span className="plan-dot before" style={{ left: `${currentBefore.floorplan_x}%`, top: `${currentBefore.floorplan_y}%` }}>B</span>
+                    ) : null}
+                    {currentAfter?.floorplan_x != null && currentAfter?.floorplan_y != null ? (
+                      <span className="plan-dot after" style={{ left: `${currentAfter.floorplan_x}%`, top: `${currentAfter.floorplan_y}%` }}>A</span>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="state">평면도 정보 없음</p>
+                )}
+                <p className="compare-caption">B: Before 위치, A: After 위치</p>
+              </div>
+
               <div className="compare-pane">
                 <p>After</p>
-                {afterImagesOf(modalCard).length > 0 ? (
+                {afterItemsOf(modalCard).length > 0 ? (
                   <>
-                    <img src={afterImagesOf(modalCard)[afterSlideIndex]} alt="after slide" className="compare-image" />
+                    <img src={afterItemsOf(modalCard)[afterSlideIndex].image_url} alt="after slide" className="compare-image" />
+                    {currentAfter?.area_label ? <p className="compare-caption">위치: {currentAfter.area_label}</p> : null}
                     <div className="compare-controls">
-                      <button
-                        onClick={() =>
-                          setAfterSlideIndex((idx) =>
-                            idx === 0 ? afterImagesOf(modalCard).length - 1 : idx - 1,
-                          )
-                        }
-                      >
-                        이전
-                      </button>
-                      <span>
-                        {afterSlideIndex + 1} / {afterImagesOf(modalCard).length}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setAfterSlideIndex((idx) =>
-                            idx === afterImagesOf(modalCard).length - 1 ? 0 : idx + 1,
-                          )
-                        }
-                      >
-                        다음
-                      </button>
+                      <button onClick={() => setAfterSlideIndex((idx) => (idx === 0 ? afterItemsOf(modalCard).length - 1 : idx - 1))}>이전</button>
+                      <span>{afterSlideIndex + 1} / {afterItemsOf(modalCard).length}</span>
+                      <button onClick={() => setAfterSlideIndex((idx) => (idx === afterItemsOf(modalCard).length - 1 ? 0 : idx + 1))}>다음</button>
                     </div>
                   </>
                 ) : (

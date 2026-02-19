@@ -36,6 +36,7 @@ export interface UnitTypeChip {
   room_count?: number | null;
   bathroom_count?: number | null;
   structure_keyword?: string | null;
+  representative_floor_plan_url?: string | null;
   portfolio_count: number;
 }
 
@@ -53,8 +54,9 @@ export interface PortfolioCard {
   title: string;
   before_image_url?: string | null;
   after_image_url?: string | null;
-  before_images?: string[];
-  after_images?: string[];
+  unit_type_floor_plan_url?: string | null;
+  before_images?: PortfolioImageItem[];
+  after_images?: PortfolioImageItem[];
   work_scope: WorkScopeType;
   style: string;
   budget_min_krw?: number | null;
@@ -62,6 +64,15 @@ export interface PortfolioCard {
   duration_days?: number | null;
   vendor_id?: number | null;
   vendor_name?: string | null;
+}
+
+export interface PortfolioImageItem {
+  image_url: string;
+  sort_order: number;
+  caption?: string | null;
+  area_label?: string | null;
+  floorplan_x?: number | null;
+  floorplan_y?: number | null;
 }
 
 export interface PortfolioListResponse {

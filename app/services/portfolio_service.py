@@ -1,11 +1,12 @@
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from app.models import Complex, Portfolio, PortfolioImage, UnitType, Vendor
+from app.models import Complex, FloorPlan, Portfolio, PortfolioImage, UnitType, Vendor
 from app.schemas.portfolio import (
     ComplexDetailResponse,
     PortfolioCard,
     PortfolioFilterQuery,
+    PortfolioImageItem,
     PortfolioListResponse,
     UnitTypeChip,
 )
@@ -24,9 +25,11 @@ def get_complex_detail(db: Session, complex_id: int) -> ComplexDetailResponse | 
             UnitType.room_count,
             UnitType.bathroom_count,
             UnitType.structure_keyword,
+            func.min(FloorPlan.image_url).label("representative_floor_plan_url"),
             func.count(Portfolio.id).label("portfolio_count"),
         )
         .outerjoin(Portfolio, Portfolio.unit_type_id == UnitType.id)
+        .outerjoin(FloorPlan, FloorPlan.unit_type_id == UnitType.id)
         .where(UnitType.complex_id == complex_id)
         .group_by(UnitType.id)
         .order_by(UnitType.exclusive_area_m2.asc(), UnitType.type_code.asc())
@@ -46,6 +49,7 @@ def get_complex_detail(db: Session, complex_id: int) -> ComplexDetailResponse | 
                 room_count=row.room_count,
                 bathroom_count=row.bathroom_count,
                 structure_keyword=row.structure_keyword,
+                representative_floor_plan_url=row.representative_floor_plan_url,
                 portfolio_count=row.portfolio_count,
             )
             for row in type_rows
@@ -90,11 +94,14 @@ def list_portfolios(
             Portfolio.duration_days,
             Vendor.id.label("vendor_id"),
             Vendor.name.label("vendor_name"),
+            func.min(FloorPlan.image_url).label("unit_type_floor_plan_url"),
         )
         .select_from(Portfolio)
         .join(UnitType, UnitType.id == Portfolio.unit_type_id)
+        .outerjoin(FloorPlan, FloorPlan.unit_type_id == UnitType.id)
         .outerjoin(Vendor, Vendor.id == Portfolio.vendor_id)
         .where(and_(*conditions))
+        .group_by(Portfolio.id, Vendor.id)
     )
 
     total = db.execute(select(func.count()).select_from(base_stmt.subquery())).scalar_one()
@@ -115,16 +122,29 @@ def list_portfolios(
                 PortfolioImage.kind,
                 PortfolioImage.image_url,
                 PortfolioImage.sort_order,
+                PortfolioImage.caption,
+                PortfolioImage.area_label,
+                PortfolioImage.floorplan_x,
+                PortfolioImage.floorplan_y,
             )
             .where(PortfolioImage.portfolio_id.in_(portfolio_ids))
             .where(PortfolioImage.kind.in_(["before", "after"]))
             .order_by(PortfolioImage.sort_order.asc(), PortfolioImage.id.asc())
         ).all()
 
-    image_map: dict[int, dict[str, list[str]]] = {}
+    image_map: dict[int, dict[str, list[PortfolioImageItem]]] = {}
     for row in image_rows:
         image_map.setdefault(row.portfolio_id, {"before": [], "after": []})
-        image_map[row.portfolio_id][row.kind].append(row.image_url)
+        image_map[row.portfolio_id][row.kind].append(
+            PortfolioImageItem(
+                image_url=row.image_url,
+                sort_order=row.sort_order,
+                caption=row.caption,
+                area_label=row.area_label,
+                floorplan_x=row.floorplan_x,
+                floorplan_y=row.floorplan_y,
+            )
+        )
 
     return PortfolioListResponse(
         total=total,
@@ -141,6 +161,7 @@ def list_portfolios(
                 duration_days=row.duration_days,
                 vendor_id=row.vendor_id,
                 vendor_name=row.vendor_name,
+                unit_type_floor_plan_url=row.unit_type_floor_plan_url,
                 before_images=image_map.get(row.id, {}).get("before", []),
                 after_images=image_map.get(row.id, {}).get("after", []),
             )

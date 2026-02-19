@@ -18,6 +18,7 @@ class UnitTypeChip(BaseModel):
     room_count: int | None = None
     bathroom_count: int | None = None
     structure_keyword: str | None = None
+    representative_floor_plan_url: str | None = None
     portfolio_count: int
 
 
@@ -28,6 +29,15 @@ class ComplexDetailResponse(BaseModel):
     built_year: int | None = None
     household_count: int | None = None
     unit_types: list[UnitTypeChip]
+
+
+class PortfolioImageItem(BaseModel):
+    image_url: str
+    sort_order: int
+    caption: str | None = None
+    area_label: str | None = None
+    floorplan_x: int | None = None
+    floorplan_y: int | None = None
 
 
 class PortfolioCard(BaseModel):
@@ -42,8 +52,9 @@ class PortfolioCard(BaseModel):
     duration_days: int | None = None
     vendor_id: int | None = None
     vendor_name: str | None = None
-    before_images: list[str] = []
-    after_images: list[str] = []
+    unit_type_floor_plan_url: str | None = None
+    before_images: list[PortfolioImageItem] = []
+    after_images: list[PortfolioImageItem] = []
 
 
 class PortfolioFilterQuery(BaseModel):
