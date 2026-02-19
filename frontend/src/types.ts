@@ -82,8 +82,12 @@ export interface AdminPortfolio {
   unit_type_id: number;
   vendor_id?: number | null;
   title: string;
+  before_image_url?: string | null;
+  after_image_url?: string | null;
   work_scope: string;
   style: string;
+  tags?: string | null;
+  summary?: string | null;
   status: PublishStatus;
   budget_min_krw?: number | null;
   budget_max_krw?: number | null;
@@ -97,8 +101,15 @@ export interface AdminPortfolioCreateInput {
   unit_type_id: number;
   vendor_id?: number;
   title: string;
+  before_image_url?: string;
+  after_image_url?: string;
   work_scope: string;
   style: string;
+  tags?: string;
+  summary?: string;
+  budget_min_krw?: number;
+  budget_max_krw?: number;
+  duration_days?: number;
   status: PublishStatus;
 }
 

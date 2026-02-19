@@ -74,8 +74,12 @@ class AdminPortfolioResponse(BaseModel):
     unit_type_id: int
     vendor_id: int | None = None
     title: str
+    before_image_url: str | None = None
+    after_image_url: str | None = None
     work_scope: str
     style: str
+    tags: str | None = None
+    summary: str | None = None
     status: PublishStatus
     budget_min_krw: int | None = None
     budget_max_krw: int | None = None

@@ -25,6 +25,7 @@ docker compose up --build
 
 접속:
 - 프론트: `http://127.0.0.1:5173`
+- 관리자 콘솔: `http://127.0.0.1:5174`
 - 백엔드 Swagger: `http://127.0.0.1:8000/docs`
 
 ## 사용성 개선 반영
@@ -41,7 +42,7 @@ docker compose up --build
 - `src/styles.css`: UI 스타일
 
 ## 관리자 콘솔
-- URL: `http://127.0.0.1:5173/admin`
+- URL: `http://127.0.0.1:5174` (루트 접속 시 `/admin`으로 이동)
 - 요청 헤더: `X-Admin-Key`
 
 ## 사용자 화면 개선

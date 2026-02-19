@@ -557,6 +557,22 @@ export default function App() {
           <div ref={cardsRef} className={highlightList ? "cards cards-highlight" : "cards"}>
             {portfolios.map((card) => (
               <article key={card.portfolio_id} className="portfolio-card">
+                <div className="thumb-grid">
+                  <div className="thumb-item">
+                    {card.before_image_url ? (
+                      <img src={card.before_image_url} alt={`${card.title} before`} loading="lazy" />
+                    ) : (
+                      <span>Before 없음</span>
+                    )}
+                  </div>
+                  <div className="thumb-item">
+                    {card.after_image_url ? (
+                      <img src={card.after_image_url} alt={`${card.title} after`} loading="lazy" />
+                    ) : (
+                      <span>After 없음</span>
+                    )}
+                  </div>
+                </div>
                 <h3>{card.title}</h3>
                 <p className="card-summary">{cardSummary(card)}</p>
                 <div className="meta compact">

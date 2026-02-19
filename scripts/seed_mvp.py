@@ -40,9 +40,9 @@ SEED_SQL = [
       id, complex_id, unit_type_id, vendor_id, title, before_image_url, after_image_url,
       work_scope, style, budget_min_krw, budget_max_krw, duration_days, tags, summary, status, published_at
     ) VALUES
-      (9001, 101, 1001, 501, '59A 미니멀 화이트 리모델링', 'https://cdn.example.com/9001-before.jpg', 'https://cdn.example.com/9001-after.jpg',
+      (9001, 101, 1001, 501, '59A 미니멀 화이트 리모델링', '/samples/portfolio-before-1.svg', '/samples/portfolio-after-1.svg',
        'full_remodeling', 'minimal', 35000000, 45000000, 28, '화이트,간접조명,수납', '주방 동선과 수납을 확장한 전체 리모델링', 'published', NOW()),
-      (9002, 101, 1002, 501, '84B 우드톤 욕실/주방 개선', 'https://cdn.example.com/9002-before.jpg', 'https://cdn.example.com/9002-after.jpg',
+      (9002, 101, 1002, 501, '84B 우드톤 욕실/주방 개선', '/samples/portfolio-before-1.svg', '/samples/portfolio-after-1.svg',
        'partial', 'wood', 18000000, 26000000, 18, '우드톤,아일랜드,욕실', '주방+욕실 중심 부분 공사', 'published', NOW())
     ON CONFLICT DO NOTHING
     """,

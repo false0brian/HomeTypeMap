@@ -33,14 +33,15 @@ docker compose up --build
 
 접속 주소:
 - 프론트: `http://127.0.0.1:5173`
-- 관리자 콘솔: `http://127.0.0.1:5173/admin`
+- 관리자 콘솔: `http://127.0.0.1:5174` (루트 접속 시 `/admin`으로 리다이렉트)
 - 백엔드 Swagger: `http://127.0.0.1:8000/docs`
 - PostgreSQL: `localhost:5432` (`postgres/postgres`)
 
 구성:
 - `db` (PostGIS 포함 PostgreSQL 16)
 - `backend` (Alembic 적용 + 시드 입력 후 uvicorn 실행)
-- `frontend` (React 빌드 결과를 nginx로 서빙, `/api`를 backend로 프록시)
+- `frontend` (사용자 웹, `5173`)
+- `frontend-admin` (관리자 웹, `5174`)
 
 ## 2) 로컬로 실행
 ### Backend
@@ -110,7 +111,7 @@ python scripts/export_openapi.py
 - 조치: 인터넷 가능한 환경에서 설치하거나 사내 미러 레지스트리 사용
 
 2. 포트 충돌
-- `5432`, `8000`, `5173` 사용 중이면 `docker-compose.yml` 포트 변경
+- `5432`, `8000`, `5173`, `5174` 사용 중이면 `docker-compose.yml` 포트 변경
 
 3. 지도가 비어있게 보이는 경우
 - 브라우저 콘솔에서 타일 요청 에러 확인

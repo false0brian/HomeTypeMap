@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
   adminCreateBlogPost,
@@ -12,6 +12,16 @@ import type { AdminBlogPost, AdminPortfolio, PublishStatus } from "./types";
 
 const DEFAULT_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY ?? "";
 
+const SAMPLE_BEFORE = "/samples/portfolio-before-1.svg";
+const SAMPLE_AFTER = "/samples/portfolio-after-1.svg";
+
+function safeNum(v: string): number | undefined {
+  const t = v.trim();
+  if (!t) return undefined;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export default function AdminApp() {
   const [adminKey, setAdminKey] = useState(DEFAULT_ADMIN_KEY);
   const [status, setStatus] = useState("관리자 콘솔 준비 중");
@@ -22,8 +32,15 @@ export default function AdminApp() {
     unit_type_id: "1001",
     vendor_id: "501",
     title: "",
+    before_image_url: "",
+    after_image_url: "",
     work_scope: "partial",
     style: "minimal",
+    summary: "",
+    tags: "",
+    budget_min_krw: "",
+    budget_max_krw: "",
+    duration_days: "",
     status: "draft" as PublishStatus,
   });
   const [blogForm, setBlogForm] = useState({
@@ -58,6 +75,14 @@ export default function AdminApp() {
     void refreshAll();
   }, []);
 
+  const imagePreview = useMemo(
+    () => ({
+      before: portfolioForm.before_image_url.trim() || SAMPLE_BEFORE,
+      after: portfolioForm.after_image_url.trim() || SAMPLE_AFTER,
+    }),
+    [portfolioForm.before_image_url, portfolioForm.after_image_url],
+  );
+
   async function onCreatePortfolio(e: FormEvent) {
     e.preventDefault();
     try {
@@ -66,11 +91,26 @@ export default function AdminApp() {
         unit_type_id: Number(portfolioForm.unit_type_id),
         vendor_id: Number(portfolioForm.vendor_id),
         title: portfolioForm.title,
+        before_image_url: portfolioForm.before_image_url.trim() || undefined,
+        after_image_url: portfolioForm.after_image_url.trim() || undefined,
         work_scope: portfolioForm.work_scope,
         style: portfolioForm.style,
+        summary: portfolioForm.summary.trim() || undefined,
+        tags: portfolioForm.tags.trim() || undefined,
+        budget_min_krw: safeNum(portfolioForm.budget_min_krw),
+        budget_max_krw: safeNum(portfolioForm.budget_max_krw),
+        duration_days: safeNum(portfolioForm.duration_days),
         status: portfolioForm.status,
       });
-      setPortfolioForm((prev) => ({ ...prev, title: "" }));
+      setPortfolioForm((prev) => ({
+        ...prev,
+        title: "",
+        summary: "",
+        tags: "",
+        budget_min_krw: "",
+        budget_max_krw: "",
+        duration_days: "",
+      }));
       await refreshAll();
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "포트폴리오 등록 실패");
@@ -111,6 +151,14 @@ export default function AdminApp() {
     } catch (e) {
       setStatus(e instanceof Error ? e.message : "블로그 상태 변경 실패");
     }
+  }
+
+  function fillSampleImages() {
+    setPortfolioForm((prev) => ({
+      ...prev,
+      before_image_url: SAMPLE_BEFORE,
+      after_image_url: SAMPLE_AFTER,
+    }));
   }
 
   return (
@@ -154,6 +202,32 @@ export default function AdminApp() {
               placeholder="포트폴리오 제목"
               required
             />
+
+            <div className="admin-inline">
+              <input
+                value={portfolioForm.before_image_url}
+                onChange={(e) => setPortfolioForm((prev) => ({ ...prev, before_image_url: e.target.value }))}
+                placeholder="before_image_url"
+              />
+              <input
+                value={portfolioForm.after_image_url}
+                onChange={(e) => setPortfolioForm((prev) => ({ ...prev, after_image_url: e.target.value }))}
+                placeholder="after_image_url"
+              />
+              <button type="button" className="ghost-btn" onClick={fillSampleImages}>샘플 이미지 채우기</button>
+            </div>
+
+            <div className="admin-image-preview">
+              <figure>
+                <img src={imagePreview.before} alt="before preview" />
+                <figcaption>Before</figcaption>
+              </figure>
+              <figure>
+                <img src={imagePreview.after} alt="after preview" />
+                <figcaption>After</figcaption>
+              </figure>
+            </div>
+
             <input
               value={portfolioForm.work_scope}
               onChange={(e) => setPortfolioForm((prev) => ({ ...prev, work_scope: e.target.value }))}
@@ -166,6 +240,37 @@ export default function AdminApp() {
               placeholder="style"
               required
             />
+            <textarea
+              value={portfolioForm.summary}
+              onChange={(e) => setPortfolioForm((prev) => ({ ...prev, summary: e.target.value }))}
+              placeholder="요약 설명"
+              rows={3}
+            />
+            <input
+              value={portfolioForm.tags}
+              onChange={(e) => setPortfolioForm((prev) => ({ ...prev, tags: e.target.value }))}
+              placeholder="태그 (예: 우드톤,수납,주방)"
+            />
+            <div className="admin-inline">
+              <input
+                type="number"
+                value={portfolioForm.budget_min_krw}
+                onChange={(e) => setPortfolioForm((prev) => ({ ...prev, budget_min_krw: e.target.value }))}
+                placeholder="budget_min_krw"
+              />
+              <input
+                type="number"
+                value={portfolioForm.budget_max_krw}
+                onChange={(e) => setPortfolioForm((prev) => ({ ...prev, budget_max_krw: e.target.value }))}
+                placeholder="budget_max_krw"
+              />
+              <input
+                type="number"
+                value={portfolioForm.duration_days}
+                onChange={(e) => setPortfolioForm((prev) => ({ ...prev, duration_days: e.target.value }))}
+                placeholder="duration_days"
+              />
+            </div>
             <select
               value={portfolioForm.status}
               onChange={(e) => setPortfolioForm((prev) => ({ ...prev, status: e.target.value as PublishStatus }))}
@@ -184,6 +289,11 @@ export default function AdminApp() {
                 <p>
                   #{item.portfolio_id} / status: <strong>{item.status}</strong>
                 </p>
+                {item.summary ? <p className="admin-card-summary">{item.summary}</p> : null}
+                <div className="admin-thumb-row">
+                  <img src={item.before_image_url || SAMPLE_BEFORE} alt="before" />
+                  <img src={item.after_image_url || SAMPLE_AFTER} alt="after" />
+                </div>
                 <button onClick={() => void publishPortfolio(item.portfolio_id)}>발행 처리</button>
               </article>
             ))}
