@@ -116,6 +116,12 @@ export interface AdminPortfolioCreateInput {
   title: string;
   before_image_url?: string;
   after_image_url?: string;
+  before_area_label?: string;
+  after_area_label?: string;
+  before_floorplan_x?: number;
+  before_floorplan_y?: number;
+  after_floorplan_x?: number;
+  after_floorplan_y?: number;
   work_scope: string;
   style: string;
   tags?: string;

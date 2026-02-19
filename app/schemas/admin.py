@@ -13,10 +13,17 @@ class PublishStatus(str, Enum):
 class AdminPortfolioBase(BaseModel):
     complex_id: int
     unit_type_id: int
+    unit_floorplan_url: str | None = Field(default=None, max_length=500)
     vendor_id: int | None = None
     title: str = Field(..., min_length=1, max_length=220)
     before_image_url: str | None = Field(default=None, max_length=500)
     after_image_url: str | None = Field(default=None, max_length=500)
+    before_area_label: str | None = Field(default=None, max_length=80)
+    after_area_label: str | None = Field(default=None, max_length=80)
+    before_floorplan_x: int | None = Field(default=None, ge=0, le=100)
+    before_floorplan_y: int | None = Field(default=None, ge=0, le=100)
+    after_floorplan_x: int | None = Field(default=None, ge=0, le=100)
+    after_floorplan_y: int | None = Field(default=None, ge=0, le=100)
     work_scope: str = Field(..., min_length=1, max_length=80)
     style: str = Field(..., min_length=1, max_length=80)
     budget_min_krw: int | None = Field(default=None, ge=0)
