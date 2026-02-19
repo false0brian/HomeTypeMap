@@ -112,6 +112,7 @@ export interface AdminPortfolio {
 export interface AdminPortfolioCreateInput {
   complex_id: number;
   unit_type_id: number;
+  unit_floorplan_url?: string;
   vendor_id?: number;
   title: string;
   before_image_url?: string;
