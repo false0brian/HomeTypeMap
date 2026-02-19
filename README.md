@@ -115,3 +115,15 @@ python scripts/export_openapi.py
 3. 지도가 비어있게 보이는 경우
 - 브라우저 콘솔에서 타일 요청 에러 확인
 - 네트워크에서 `tile.openstreetmap.org` 접근 가능 여부 확인
+
+4. 스키마 컬럼 누락 오류(`column ... does not exist`)가 나는 경우
+- 기존 Docker 볼륨의 DB 스키마가 최신 코드보다 오래된 상태일 수 있습니다.
+- 루트에서 마이그레이션 재적용:
+```bash
+docker compose run --rm backend alembic upgrade head
+```
+- 필요 시 DB 볼륨 초기화 후 재기동:
+```bash
+docker compose down -v
+docker compose up --build
+```
