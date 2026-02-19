@@ -2,7 +2,7 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Complex, Portfolio
-from app.schemas.map import ClusterPin, ComplexPin, MapBoundsQuery, MapPinsResponse
+from app.schemas.map import ClusterPin, ComplexPin, MapBoundsQuery, MapPinsResponse, NearbyComplexesResponse
 
 
 def _bbox_base_query(bounds: MapBoundsQuery) -> Select:
@@ -77,6 +77,61 @@ def get_map_pins(db: Session, bounds: MapBoundsQuery) -> MapPinsResponse:
                 latitude=row.centroid_latitude,
                 longitude=row.centroid_longitude,
                 portfolio_count=row.portfolio_count,
+            )
+            for row in rows
+        ],
+    )
+
+
+def get_nearby_complexes(
+    db: Session,
+    latitude: float,
+    longitude: float,
+    radius_m: int,
+    limit: int = 200,
+) -> NearbyComplexesResponse:
+    earth_radius_m = 6371000
+    distance_expr = earth_radius_m * func.acos(
+        func.least(
+            1.0,
+            func.greatest(
+                -1.0,
+                func.sin(func.radians(latitude)) * func.sin(func.radians(Complex.centroid_latitude))
+                + func.cos(func.radians(latitude))
+                * func.cos(func.radians(Complex.centroid_latitude))
+                * func.cos(func.radians(Complex.centroid_longitude) - func.radians(longitude)),
+            ),
+        )
+    )
+
+    rows = db.execute(
+        select(
+            Complex.id,
+            Complex.name,
+            Complex.centroid_latitude,
+            Complex.centroid_longitude,
+            func.count(Portfolio.id).label("portfolio_count"),
+            distance_expr.label("distance_m"),
+        )
+        .outerjoin(Portfolio, Portfolio.complex_id == Complex.id)
+        .group_by(Complex.id)
+        .having(distance_expr <= radius_m)
+        .order_by(distance_expr.asc(), Complex.id.asc())
+        .limit(limit)
+    ).all()
+
+    return NearbyComplexesResponse(
+        center_latitude=latitude,
+        center_longitude=longitude,
+        radius_m=radius_m,
+        items=[
+            ComplexPin(
+                complex_id=row.id,
+                name=row.name,
+                latitude=row.centroid_latitude,
+                longitude=row.centroid_longitude,
+                portfolio_count=row.portfolio_count,
+                distance_m=float(row.distance_m),
             )
             for row in rows
         ],

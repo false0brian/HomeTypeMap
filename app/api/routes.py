@@ -12,7 +12,7 @@ from app.schemas.admin import (
     AdminPortfolioUpdate,
     PublishStatus,
 )
-from app.schemas.map import MapBoundsQuery, MapPinsResponse
+from app.schemas.map import MapBoundsQuery, MapPinsResponse, NearbyComplexesResponse
 from app.schemas.portfolio import (
     ComplexDetailResponse,
     FavoriteCreateRequest,
@@ -23,7 +23,7 @@ from app.schemas.portfolio import (
 )
 from app.schemas.vendor import QuoteRequestCreate, QuoteRequestResponse
 from app.services.favorite_service import create_favorite, list_favorites
-from app.services.map_service import get_map_pins
+from app.services.map_service import get_map_pins, get_nearby_complexes
 from app.services.admin_service import (
     create_admin_portfolio,
     create_blog_post,
@@ -66,6 +66,22 @@ def map_pins(
 ):
     bounds = MapBoundsQuery(south=south, west=west, north=north, east=east, zoom=zoom)
     return get_map_pins(db, bounds)
+
+
+@router.get(
+    "/map/nearby",
+    response_model=NearbyComplexesResponse,
+    tags=["map"],
+    summary="현재 위치 기준 반경 내 단지 조회",
+)
+def map_nearby(
+    lat: float = Query(..., ge=-90, le=90, description="기준 위도"),
+    lng: float = Query(..., ge=-180, le=180, description="기준 경도"),
+    radius_m: int = Query(default=3000, ge=200, le=50000, description="검색 반경(미터)"),
+    limit: int = Query(default=200, ge=1, le=1000, description="최대 반환 개수"),
+    db: Session = Depends(get_db),
+):
+    return get_nearby_complexes(db, latitude=lat, longitude=lng, radius_m=radius_m, limit=limit)
 
 
 @router.get(

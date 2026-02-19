@@ -17,6 +17,7 @@ class ComplexPin(BaseModel):
     latitude: Decimal
     longitude: Decimal
     portfolio_count: int
+    distance_m: float | None = None
 
 
 class ClusterPin(BaseModel):
@@ -29,3 +30,10 @@ class ClusterPin(BaseModel):
 class MapPinsResponse(BaseModel):
     clusters: list[ClusterPin]
     complexes: list[ComplexPin]
+
+
+class NearbyComplexesResponse(BaseModel):
+    center_latitude: float
+    center_longitude: float
+    radius_m: int
+    items: list[ComplexPin]
