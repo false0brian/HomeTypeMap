@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db.session import get_db
+from app.models import FloorPlan, Portfolio, PortfolioImage
 from app.schemas.admin import (
     AdminBlogPostCreate,
     AdminBlogPostResponse,
     AdminBlogPostUpdate,
+    AdminPortfolioImageResponse,
     AdminPortfolioCreate,
     AdminPortfolioResponse,
     AdminPortfolioUpdate,
@@ -48,6 +51,55 @@ admin_router = APIRouter(
     tags=["admin"],
     dependencies=[Depends(require_admin_key)],
 )
+
+
+def _serialize_admin_portfolio(db: Session, row: Portfolio) -> AdminPortfolioResponse:
+    images = db.execute(
+        select(PortfolioImage)
+        .where(PortfolioImage.portfolio_id == row.id)
+        .order_by(PortfolioImage.sort_order.asc(), PortfolioImage.id.asc())
+    ).scalars()
+    before_items: list[AdminPortfolioImageResponse] = []
+    after_items: list[AdminPortfolioImageResponse] = []
+    for image in images:
+        payload = AdminPortfolioImageResponse(
+            image_url=image.image_url,
+            sort_order=image.sort_order,
+            area_label=image.area_label,
+            floorplan_x=image.floorplan_x,
+            floorplan_y=image.floorplan_y,
+        )
+        if image.kind == "before":
+            before_items.append(payload)
+        elif image.kind == "after":
+            after_items.append(payload)
+
+    floor_plan = db.execute(
+        select(FloorPlan).where(FloorPlan.unit_type_id == row.unit_type_id).order_by(FloorPlan.id.asc())
+    ).scalars().first()
+
+    return AdminPortfolioResponse(
+        portfolio_id=row.id,
+        complex_id=row.complex_id,
+        unit_type_id=row.unit_type_id,
+        unit_floorplan_url=floor_plan.image_url if floor_plan is not None else None,
+        vendor_id=row.vendor_id,
+        title=row.title,
+        before_image_url=row.before_image_url,
+        after_image_url=row.after_image_url,
+        before_image_items=before_items,
+        after_image_items=after_items,
+        work_scope=row.work_scope,
+        style=row.style,
+        tags=row.tags,
+        summary=row.summary,
+        status=row.status,
+        budget_min_krw=row.budget_min_krw,
+        budget_max_krw=row.budget_max_krw,
+        duration_days=row.duration_days,
+        published_at=row.published_at,
+        created_at=row.created_at,
+    )
 
 
 @router.get(
@@ -192,28 +244,7 @@ def admin_portfolio_list(
     db: Session = Depends(get_db),
 ):
     rows = list_admin_portfolios(db, vendor_id=vendor_id, status=status, limit=limit, offset=offset)
-    return [
-        AdminPortfolioResponse(
-            portfolio_id=row.id,
-            complex_id=row.complex_id,
-            unit_type_id=row.unit_type_id,
-            vendor_id=row.vendor_id,
-            title=row.title,
-            before_image_url=row.before_image_url,
-            after_image_url=row.after_image_url,
-            work_scope=row.work_scope,
-            style=row.style,
-            tags=row.tags,
-            summary=row.summary,
-            status=row.status,
-            budget_min_krw=row.budget_min_krw,
-            budget_max_krw=row.budget_max_krw,
-            duration_days=row.duration_days,
-            published_at=row.published_at,
-            created_at=row.created_at,
-        )
-        for row in rows
-    ]
+    return [_serialize_admin_portfolio(db, row) for row in rows]
 
 
 @admin_router.post(
@@ -224,25 +255,7 @@ def admin_portfolio_list(
 )
 def admin_portfolio_create(payload: AdminPortfolioCreate, db: Session = Depends(get_db)):
     row = create_admin_portfolio(db, payload)
-    return AdminPortfolioResponse(
-        portfolio_id=row.id,
-        complex_id=row.complex_id,
-        unit_type_id=row.unit_type_id,
-        vendor_id=row.vendor_id,
-        title=row.title,
-        before_image_url=row.before_image_url,
-        after_image_url=row.after_image_url,
-        work_scope=row.work_scope,
-        style=row.style,
-        tags=row.tags,
-        summary=row.summary,
-        status=row.status,
-        budget_min_krw=row.budget_min_krw,
-        budget_max_krw=row.budget_max_krw,
-        duration_days=row.duration_days,
-        published_at=row.published_at,
-        created_at=row.created_at,
-    )
+    return _serialize_admin_portfolio(db, row)
 
 
 @admin_router.patch(
@@ -254,25 +267,7 @@ def admin_portfolio_patch(portfolio_id: int, payload: AdminPortfolioUpdate, db: 
     row = update_admin_portfolio(db, portfolio_id=portfolio_id, payload=payload)
     if row is None:
         raise HTTPException(status_code=404, detail="portfolio not found")
-    return AdminPortfolioResponse(
-        portfolio_id=row.id,
-        complex_id=row.complex_id,
-        unit_type_id=row.unit_type_id,
-        vendor_id=row.vendor_id,
-        title=row.title,
-        before_image_url=row.before_image_url,
-        after_image_url=row.after_image_url,
-        work_scope=row.work_scope,
-        style=row.style,
-        tags=row.tags,
-        summary=row.summary,
-        status=row.status,
-        budget_min_krw=row.budget_min_krw,
-        budget_max_krw=row.budget_max_krw,
-        duration_days=row.duration_days,
-        published_at=row.published_at,
-        created_at=row.created_at,
-    )
+    return _serialize_admin_portfolio(db, row)
 
 
 @admin_router.get(

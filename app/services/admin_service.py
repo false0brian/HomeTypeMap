@@ -1,9 +1,9 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
-from app.models import BlogPost, FloorPlan, Portfolio, PortfolioImage
+from app.models import BlogPost, FloorPlan, Portfolio, PortfolioImage, UnitType
 from app.schemas.admin import (
     AdminBlogPostCreate,
     AdminBlogPostUpdate,
@@ -134,7 +134,10 @@ def list_admin_portfolios(
     limit: int = 50,
     offset: int = 0,
 ) -> list[Portfolio]:
-    stmt = select(Portfolio)
+    stmt = select(Portfolio).options(
+        selectinload(Portfolio.images),
+        selectinload(Portfolio.unit_type).selectinload(UnitType.floor_plans),
+    )
     if vendor_id is not None:
         stmt = stmt.where(Portfolio.vendor_id == vendor_id)
     if status is not None:

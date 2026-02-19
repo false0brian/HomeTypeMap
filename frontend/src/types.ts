@@ -93,10 +93,13 @@ export interface AdminPortfolio {
   portfolio_id: number;
   complex_id: number;
   unit_type_id: number;
+  unit_floorplan_url?: string | null;
   vendor_id?: number | null;
   title: string;
   before_image_url?: string | null;
   after_image_url?: string | null;
+  before_image_items?: AdminPortfolioImageItem[];
+  after_image_items?: AdminPortfolioImageItem[];
   work_scope: string;
   style: string;
   tags?: string | null;
@@ -107,6 +110,14 @@ export interface AdminPortfolio {
   duration_days?: number | null;
   published_at?: string | null;
   created_at: string;
+}
+
+export interface AdminPortfolioImageItem {
+  image_url: string;
+  sort_order: number;
+  area_label?: string | null;
+  floorplan_x?: number | null;
+  floorplan_y?: number | null;
 }
 
 export interface AdminPortfolioCreateInput {

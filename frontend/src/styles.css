@@ -502,6 +502,42 @@ body {
   margin-top: 6px !important;
 }
 
+.admin-mapping-details {
+  margin-top: 8px;
+  border: 1px solid #d4dfd7;
+  border-radius: 10px;
+  background: #f2f7f1;
+  padding: 8px;
+}
+
+.admin-mapping-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2f4d41;
+}
+
+.admin-mapping-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-mapping-row {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: #476056;
+  border: 1px solid #d6e2d9;
+  border-radius: 8px;
+  background: #fbfdf9;
+  padding: 7px 8px;
+}
+
+.admin-mapping-row strong {
+  color: #25463b;
+}
+
 .admin-pin-toolbar {
   display: flex;
   flex-wrap: wrap;

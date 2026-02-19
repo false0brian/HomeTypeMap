@@ -85,14 +85,25 @@ class AdminPortfolioUpdate(BaseModel):
         return self
 
 
+class AdminPortfolioImageResponse(BaseModel):
+    image_url: str
+    sort_order: int
+    area_label: str | None = None
+    floorplan_x: int | None = None
+    floorplan_y: int | None = None
+
+
 class AdminPortfolioResponse(BaseModel):
     portfolio_id: int
     complex_id: int
     unit_type_id: int
+    unit_floorplan_url: str | None = None
     vendor_id: int | None = None
     title: str
     before_image_url: str | None = None
     after_image_url: str | None = None
+    before_image_items: list[AdminPortfolioImageResponse] = Field(default_factory=list)
+    after_image_items: list[AdminPortfolioImageResponse] = Field(default_factory=list)
     work_scope: str
     style: str
     tags: str | None = None

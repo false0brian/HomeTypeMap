@@ -8,7 +8,7 @@ import {
   adminUpdateBlogStatus,
   adminUpdatePortfolioStatus,
 } from "./api";
-import type { AdminBlogPost, AdminPortfolio, PublishStatus } from "./types";
+import type { AdminBlogPost, AdminPortfolio, AdminPortfolioImageItem, PublishStatus } from "./types";
 
 const DEFAULT_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY ?? "";
 
@@ -32,6 +32,12 @@ type ImagePairForm = {
   after_y: string;
 };
 
+type MappingRowView = {
+  sortOrder: number;
+  before?: AdminPortfolioImageItem;
+  after?: AdminPortfolioImageItem;
+};
+
 function safeNum(v: string): number | undefined {
   const t = v.trim();
   if (!t) return undefined;
@@ -51,6 +57,44 @@ function makePair(order: number): ImagePairForm {
     after_x: "",
     after_y: "",
   };
+}
+
+function buildMappingRows(item: AdminPortfolio): MappingRowView[] {
+  const beforeItems =
+    item.before_image_items && item.before_image_items.length > 0
+      ? item.before_image_items
+      : item.before_image_url
+        ? [{ image_url: item.before_image_url, sort_order: 1 }]
+        : [];
+  const afterItems =
+    item.after_image_items && item.after_image_items.length > 0
+      ? item.after_image_items
+      : item.after_image_url
+        ? [{ image_url: item.after_image_url, sort_order: 1 }]
+        : [];
+
+  const rows = new Map<number, MappingRowView>();
+  for (const before of beforeItems) {
+    const key = before.sort_order ?? 1;
+    const current = rows.get(key) ?? { sortOrder: key };
+    current.before = before;
+    rows.set(key, current);
+  }
+  for (const after of afterItems) {
+    const key = after.sort_order ?? 1;
+    const current = rows.get(key) ?? { sortOrder: key };
+    current.after = after;
+    rows.set(key, current);
+  }
+  return Array.from(rows.values()).sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+function pinLabel(image?: AdminPortfolioImageItem) {
+  if (!image) return "-";
+  const hasX = typeof image.floorplan_x === "number";
+  const hasY = typeof image.floorplan_y === "number";
+  if (!hasX || !hasY) return "-";
+  return `${image.floorplan_x}, ${image.floorplan_y}`;
 }
 
 export default function AdminApp() {
@@ -357,16 +401,39 @@ export default function AdminApp() {
           <div className="admin-list">
             {portfolios.map((item) => (
               <article key={item.portfolio_id} className="admin-card">
-                <h3>{item.title}</h3>
-                <p>
-                  #{item.portfolio_id} / status: <strong>{item.status}</strong>
-                </p>
-                {item.summary ? <p className="admin-card-summary">{item.summary}</p> : null}
-                <div className="admin-thumb-row">
-                  <img src={item.before_image_url || SAMPLE_BEFORE_1} alt="before" />
-                  <img src={item.after_image_url || SAMPLE_AFTER_1} alt="after" />
-                </div>
-                <button onClick={() => void publishPortfolio(item.portfolio_id)}>발행 처리</button>
+                {(() => {
+                  const mappingRows = buildMappingRows(item);
+                  const previewBefore = mappingRows[0]?.before?.image_url || item.before_image_url || SAMPLE_BEFORE_1;
+                  const previewAfter = mappingRows[0]?.after?.image_url || item.after_image_url || SAMPLE_AFTER_1;
+                  return (
+                    <>
+                      <h3>{item.title}</h3>
+                      <p>
+                        #{item.portfolio_id} / status: <strong>{item.status}</strong>
+                      </p>
+                      {item.summary ? <p className="admin-card-summary">{item.summary}</p> : null}
+                      <div className="admin-thumb-row">
+                        <img src={previewBefore} alt="before" />
+                        <img src={previewAfter} alt="after" />
+                      </div>
+                      {mappingRows.length > 0 ? (
+                        <details className="admin-mapping-details">
+                          <summary>매핑 행 {mappingRows.length}개 펼쳐보기</summary>
+                          <div className="admin-mapping-list">
+                            {mappingRows.map((row) => (
+                              <div className="admin-mapping-row" key={`${item.portfolio_id}-${row.sortOrder}`}>
+                                <strong>#{row.sortOrder}</strong>
+                                <span>B: {row.before?.area_label || "-"} / pin {pinLabel(row.before)}</span>
+                                <span>A: {row.after?.area_label || "-"} / pin {pinLabel(row.after)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      ) : null}
+                      <button onClick={() => void publishPortfolio(item.portfolio_id)}>발행 처리</button>
+                    </>
+                  );
+                })()}
               </article>
             ))}
           </div>
