@@ -38,12 +38,22 @@ SEED_SQL = [
     """
     INSERT INTO portfolios (
       id, complex_id, unit_type_id, vendor_id, title, before_image_url, after_image_url,
-      work_scope, style, budget_min_krw, budget_max_krw, duration_days, tags, summary
+      work_scope, style, budget_min_krw, budget_max_krw, duration_days, tags, summary, status, published_at
     ) VALUES
       (9001, 101, 1001, 501, '59A 미니멀 화이트 리모델링', 'https://cdn.example.com/9001-before.jpg', 'https://cdn.example.com/9001-after.jpg',
-       'full_remodeling', 'minimal', 35000000, 45000000, 28, '화이트,간접조명,수납', '주방 동선과 수납을 확장한 전체 리모델링'),
+       'full_remodeling', 'minimal', 35000000, 45000000, 28, '화이트,간접조명,수납', '주방 동선과 수납을 확장한 전체 리모델링', 'published', NOW()),
       (9002, 101, 1002, 501, '84B 우드톤 욕실/주방 개선', 'https://cdn.example.com/9002-before.jpg', 'https://cdn.example.com/9002-after.jpg',
-       'partial', 'wood', 18000000, 26000000, 18, '우드톤,아일랜드,욕실', '주방+욕실 중심 부분 공사')
+       'partial', 'wood', 18000000, 26000000, 18, '우드톤,아일랜드,욕실', '주방+욕실 중심 부분 공사', 'published', NOW())
+    ON CONFLICT DO NOTHING
+    """,
+    """
+    INSERT INTO blog_posts (
+      id, vendor_id, title, slug, excerpt, content, status, published_at
+    ) VALUES
+      (7001, 501, '59A 리모델링 동선 설계 포인트', 'flow-guide-59a',
+       '좁은 주방에서 수납과 동선을 동시에 확보한 설계 사례입니다.',
+       '공간별 동선 분석, 조명 계획, 수납 위치를 단계별로 정리했습니다.',
+       'published', NOW())
     ON CONFLICT DO NOTHING
     """,
 ]

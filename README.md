@@ -32,6 +32,7 @@ docker compose up --build
 
 접속 주소:
 - 프론트: `http://127.0.0.1:5173`
+- 관리자 콘솔: `http://127.0.0.1:5173/admin`
 - 백엔드 Swagger: `http://127.0.0.1:8000/docs`
 - PostgreSQL: `localhost:5432` (`postgres/postgres`)
 
@@ -73,6 +74,10 @@ pytest -q
 - HTML 샘플: `docs/frontend/map_bottom_sheet_example.html`
 - RN 샘플: `docs/frontend/react_native_integration_example.ts`
 - Flutter 연동 노트: `docs/frontend/flutter_integration_notes.md`
+
+## 관리자 API 인증
+- 헤더 `X-Admin-Key`가 필요합니다.
+- 기본 개발 키: `.env.example`의 `ADMIN_API_KEY=dev-admin-key`
 
 ## 사용성 개선 반영 사항
 1. 사용자 식별 입력 방식

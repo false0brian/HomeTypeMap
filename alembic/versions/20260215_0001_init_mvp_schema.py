@@ -95,6 +95,8 @@ def upgrade() -> None:
         sa.Column("duration_days", sa.Integer(), nullable=True),
         sa.Column("tags", sa.Text(), nullable=True),
         sa.Column("summary", sa.Text(), nullable=True),
+        sa.Column("status", sa.String(length=20), server_default="draft", nullable=False),
+        sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.CheckConstraint(
             "budget_min_krw IS NULL OR budget_max_krw IS NULL OR budget_min_krw <= budget_max_krw",
@@ -107,8 +109,34 @@ def upgrade() -> None:
     )
     op.create_index("ix_portfolios_budget_range", "portfolios", ["budget_min_krw", "budget_max_krw"], unique=False)
     op.create_index("ix_portfolios_complex_unit", "portfolios", ["complex_id", "unit_type_id"], unique=False)
+    op.create_index("ix_portfolios_status", "portfolios", ["status"], unique=False)
     op.create_index("ix_portfolios_style", "portfolios", ["style"], unique=False)
     op.create_index("ix_portfolios_work_scope", "portfolios", ["work_scope"], unique=False)
+
+    op.create_table(
+        "blog_posts",
+        sa.Column("id", sa.BigInteger(), nullable=False),
+        sa.Column("vendor_id", sa.BigInteger(), nullable=True),
+        sa.Column("title", sa.String(length=220), nullable=False),
+        sa.Column("slug", sa.String(length=140), nullable=False),
+        sa.Column("excerpt", sa.String(length=500), nullable=True),
+        sa.Column("content", sa.Text(), nullable=False),
+        sa.Column("status", sa.String(length=20), server_default="draft", nullable=False),
+        sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.ForeignKeyConstraint(["vendor_id"], ["vendors.id"], ondelete="SET NULL"),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("slug"),
+    )
+    op.create_index("ix_blog_posts_published_at", "blog_posts", ["published_at"], unique=False)
+    op.create_index("ix_blog_posts_status", "blog_posts", ["status"], unique=False)
+    op.create_index("ix_blog_posts_vendor_id", "blog_posts", ["vendor_id"], unique=False)
 
     op.create_table(
         "floor_plans",
@@ -153,8 +181,13 @@ def downgrade() -> None:
     op.drop_index("ix_user_favorites_user_key", table_name="user_favorites")
     op.drop_table("user_favorites")
     op.drop_table("floor_plans")
+    op.drop_index("ix_blog_posts_vendor_id", table_name="blog_posts")
+    op.drop_index("ix_blog_posts_status", table_name="blog_posts")
+    op.drop_index("ix_blog_posts_published_at", table_name="blog_posts")
+    op.drop_table("blog_posts")
     op.drop_index("ix_portfolios_work_scope", table_name="portfolios")
     op.drop_index("ix_portfolios_style", table_name="portfolios")
+    op.drop_index("ix_portfolios_status", table_name="portfolios")
     op.drop_index("ix_portfolios_complex_unit", table_name="portfolios")
     op.drop_index("ix_portfolios_budget_range", table_name="portfolios")
     op.drop_table("portfolios")
