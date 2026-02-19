@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
+  <rect width="900" height="600" fill="#d6d0c6"/>
+  <rect x="90" y="120" width="720" height="360" rx="20" fill="#ece7de" stroke="#b3aba0" stroke-width="6"/>
+  <rect x="130" y="180" width="300" height="220" rx="12" fill="#c9c1b5"/>
+  <rect x="470" y="180" width="290" height="220" rx="12" fill="#c9c1b5"/>
+  <text x="450" y="515" font-size="42" font-family="SUIT, Arial" text-anchor="middle" fill="#6f675d">Before 2</text>
+</svg>

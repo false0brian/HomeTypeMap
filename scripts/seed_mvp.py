@@ -56,6 +56,18 @@ SEED_SQL = [
        'published', NOW())
     ON CONFLICT DO NOTHING
     """,
+    """
+    INSERT INTO portfolio_images (
+      id, portfolio_id, kind, image_url, sort_order, caption
+    ) VALUES
+      (91001, 9001, 'before', '/samples/portfolio-before-1.svg', 1, '리모델링 전 거실'),
+      (91002, 9001, 'after', '/samples/portfolio-after-1.svg', 1, '리모델링 후 거실'),
+      (91003, 9001, 'before', '/samples/portfolio-before-2.svg', 2, '리모델링 전 주방'),
+      (91004, 9001, 'after', '/samples/portfolio-after-2.svg', 2, '리모델링 후 주방'),
+      (92001, 9002, 'before', '/samples/portfolio-before-1.svg', 1, '부분공사 전'),
+      (92002, 9002, 'after', '/samples/portfolio-after-1.svg', 1, '부분공사 후')
+    ON CONFLICT DO NOTHING
+    """,
 ]
 
 

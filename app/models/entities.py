@@ -124,6 +124,10 @@ class Portfolio(Base):
     complex: Mapped[Complex] = relationship(back_populates="portfolios")
     unit_type: Mapped[UnitType] = relationship(back_populates="portfolios")
     vendor: Mapped[Vendor | None] = relationship(back_populates="portfolios")
+    images: Mapped[list[PortfolioImage]] = relationship(
+        back_populates="portfolio",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         CheckConstraint(
@@ -163,6 +167,25 @@ class BlogPost(Base):
         Index("ix_blog_posts_vendor_id", "vendor_id"),
         Index("ix_blog_posts_status", "status"),
         Index("ix_blog_posts_published_at", "published_at"),
+    )
+
+
+class PortfolioImage(Base):
+    __tablename__ = "portfolio_images"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    portfolio_id: Mapped[int] = mapped_column(ForeignKey("portfolios.id", ondelete="CASCADE"), nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)  # before | after | detail
+    image_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    caption: Mapped[str | None] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    portfolio: Mapped[Portfolio] = relationship(back_populates="images")
+
+    __table_args__ = (
+        Index("ix_portfolio_images_portfolio", "portfolio_id"),
+        Index("ix_portfolio_images_kind_sort", "kind", "sort_order"),
     )
 
 

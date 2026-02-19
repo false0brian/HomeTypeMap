@@ -74,6 +74,18 @@ CREATE INDEX IF NOT EXISTS ix_portfolios_work_scope ON portfolios (work_scope);
 CREATE INDEX IF NOT EXISTS ix_portfolios_budget_range ON portfolios (budget_min_krw, budget_max_krw);
 CREATE INDEX IF NOT EXISTS ix_portfolios_status ON portfolios (status);
 
+CREATE TABLE IF NOT EXISTS portfolio_images (
+  id BIGINT PRIMARY KEY,
+  portfolio_id BIGINT NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+  kind VARCHAR(20) NOT NULL,
+  image_url VARCHAR(500) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  caption VARCHAR(200),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_portfolio_images_portfolio ON portfolio_images (portfolio_id);
+CREATE INDEX IF NOT EXISTS ix_portfolio_images_kind_sort ON portfolio_images (kind, sort_order);
+
 CREATE TABLE IF NOT EXISTS blog_posts (
   id BIGINT PRIMARY KEY,
   vendor_id BIGINT REFERENCES vendors(id) ON DELETE SET NULL,

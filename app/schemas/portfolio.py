@@ -42,6 +42,8 @@ class PortfolioCard(BaseModel):
     duration_days: int | None = None
     vendor_id: int | None = None
     vendor_name: str | None = None
+    before_images: list[str] = []
+    after_images: list[str] = []
 
 
 class PortfolioFilterQuery(BaseModel):

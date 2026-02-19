@@ -1,7 +1,7 @@
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from app.models import Complex, Portfolio, UnitType, Vendor
+from app.models import Complex, Portfolio, PortfolioImage, UnitType, Vendor
 from app.schemas.portfolio import (
     ComplexDetailResponse,
     PortfolioCard,
@@ -106,6 +106,26 @@ def list_portfolios(
         .offset(query.offset)
     ).all()
 
+    portfolio_ids = [row.id for row in rows]
+    image_rows = []
+    if portfolio_ids:
+        image_rows = db.execute(
+            select(
+                PortfolioImage.portfolio_id,
+                PortfolioImage.kind,
+                PortfolioImage.image_url,
+                PortfolioImage.sort_order,
+            )
+            .where(PortfolioImage.portfolio_id.in_(portfolio_ids))
+            .where(PortfolioImage.kind.in_(["before", "after"]))
+            .order_by(PortfolioImage.sort_order.asc(), PortfolioImage.id.asc())
+        ).all()
+
+    image_map: dict[int, dict[str, list[str]]] = {}
+    for row in image_rows:
+        image_map.setdefault(row.portfolio_id, {"before": [], "after": []})
+        image_map[row.portfolio_id][row.kind].append(row.image_url)
+
     return PortfolioListResponse(
         total=total,
         items=[
@@ -121,6 +141,8 @@ def list_portfolios(
                 duration_days=row.duration_days,
                 vendor_id=row.vendor_id,
                 vendor_name=row.vendor_name,
+                before_images=image_map.get(row.id, {}).get("before", []),
+                after_images=image_map.get(row.id, {}).get("after", []),
             )
             for row in rows
         ],

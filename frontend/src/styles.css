@@ -672,6 +672,87 @@ body {
   color: #fff;
 }
 
+.compare-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 24, 20, 0.62);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+  padding: 14px;
+}
+
+.compare-modal {
+  width: min(980px, 100%);
+  border-radius: 16px;
+  background: #f8fcf7;
+  border: 1px solid #cfe0d5;
+  overflow: hidden;
+}
+
+.compare-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #d8e4db;
+}
+
+.compare-head h3 {
+  margin: 0;
+}
+
+.compare-head button {
+  border: 0;
+  border-radius: 9px;
+  padding: 7px 11px;
+  background: #dbe9df;
+  color: #204135;
+}
+
+.compare-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+}
+
+.compare-pane {
+  border: 1px solid #d3e0d7;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+
+.compare-pane p {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.compare-image {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #d4e0d8;
+}
+
+.compare-controls {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.compare-controls button {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #e5efe8;
+  color: #1f4335;
+}
+
 .state {
   margin: 10px 14px;
   color: var(--muted);
@@ -742,5 +823,13 @@ body {
 
   .mobile-hidden {
     display: none;
+  }
+
+  .compare-body {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-image {
+    height: 220px;
   }
 }

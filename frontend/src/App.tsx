@@ -98,6 +98,9 @@ export default function App() {
   const [highlightList, setHighlightList] = useState(false);
   const [nearbyRadiusM, setNearbyRadiusM] = useState(3000);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [modalCard, setModalCard] = useState<PortfolioCard | null>(null);
+  const [beforeSlideIndex, setBeforeSlideIndex] = useState(0);
+  const [afterSlideIndex, setAfterSlideIndex] = useState(0);
 
   const syncBoundsFromMap = () => {
     const map = mapRef.current;
@@ -438,6 +441,22 @@ export default function App() {
     setUserLocation(null);
   }
 
+  function beforeImagesOf(card: PortfolioCard): string[] {
+    if (card.before_images && card.before_images.length > 0) return card.before_images;
+    return card.before_image_url ? [card.before_image_url] : [];
+  }
+
+  function afterImagesOf(card: PortfolioCard): string[] {
+    if (card.after_images && card.after_images.length > 0) return card.after_images;
+    return card.after_image_url ? [card.after_image_url] : [];
+  }
+
+  function openCompareModal(card: PortfolioCard) {
+    setModalCard(card);
+    setBeforeSlideIndex(0);
+    setAfterSlideIndex(0);
+  }
+
   return (
     <div className="page">
       <header className="topbar">
@@ -559,15 +578,15 @@ export default function App() {
               <article key={card.portfolio_id} className="portfolio-card">
                 <div className="thumb-grid">
                   <div className="thumb-item">
-                    {card.before_image_url ? (
-                      <img src={card.before_image_url} alt={`${card.title} before`} loading="lazy" />
+                    {beforeImagesOf(card)[0] ? (
+                      <img src={beforeImagesOf(card)[0]} alt={`${card.title} before`} loading="lazy" />
                     ) : (
                       <span>Before 없음</span>
                     )}
                   </div>
                   <div className="thumb-item">
-                    {card.after_image_url ? (
-                      <img src={card.after_image_url} alt={`${card.title} after`} loading="lazy" />
+                    {afterImagesOf(card)[0] ? (
+                      <img src={afterImagesOf(card)[0]} alt={`${card.title} after`} loading="lazy" />
                     ) : (
                       <span>After 없음</span>
                     )}
@@ -580,6 +599,9 @@ export default function App() {
                   <span>{card.work_scope}</span>
                 </div>
                 <div className="actions">
+                  <button className="ghost" onClick={() => openCompareModal(card)}>
+                    비교 보기
+                  </button>
                   <button className="ghost" onClick={() => onFavorite(card.portfolio_id)}>
                     저장
                   </button>
@@ -593,6 +615,89 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {modalCard ? (
+        <div className="compare-modal-backdrop" onClick={() => setModalCard(null)}>
+          <section className="compare-modal" onClick={(e) => e.stopPropagation()}>
+            <header className="compare-head">
+              <h3>{modalCard.title}</h3>
+              <button onClick={() => setModalCard(null)}>닫기</button>
+            </header>
+            <div className="compare-body">
+              <div className="compare-pane">
+                <p>Before</p>
+                {beforeImagesOf(modalCard).length > 0 ? (
+                  <>
+                    <img
+                      src={beforeImagesOf(modalCard)[beforeSlideIndex]}
+                      alt="before slide"
+                      className="compare-image"
+                    />
+                    <div className="compare-controls">
+                      <button
+                        onClick={() =>
+                          setBeforeSlideIndex((idx) =>
+                            idx === 0 ? beforeImagesOf(modalCard).length - 1 : idx - 1,
+                          )
+                        }
+                      >
+                        이전
+                      </button>
+                      <span>
+                        {beforeSlideIndex + 1} / {beforeImagesOf(modalCard).length}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setBeforeSlideIndex((idx) =>
+                            idx === beforeImagesOf(modalCard).length - 1 ? 0 : idx + 1,
+                          )
+                        }
+                      >
+                        다음
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="state">Before 이미지 없음</p>
+                )}
+              </div>
+              <div className="compare-pane">
+                <p>After</p>
+                {afterImagesOf(modalCard).length > 0 ? (
+                  <>
+                    <img src={afterImagesOf(modalCard)[afterSlideIndex]} alt="after slide" className="compare-image" />
+                    <div className="compare-controls">
+                      <button
+                        onClick={() =>
+                          setAfterSlideIndex((idx) =>
+                            idx === 0 ? afterImagesOf(modalCard).length - 1 : idx - 1,
+                          )
+                        }
+                      >
+                        이전
+                      </button>
+                      <span>
+                        {afterSlideIndex + 1} / {afterImagesOf(modalCard).length}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setAfterSlideIndex((idx) =>
+                            idx === afterImagesOf(modalCard).length - 1 ? 0 : idx + 1,
+                          )
+                        }
+                      >
+                        다음
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="state">After 이미지 없음</p>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
