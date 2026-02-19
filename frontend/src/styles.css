@@ -214,11 +214,19 @@ body {
 
 .map-canvas {
   position: relative;
+  z-index: 1;
   height: calc(65vh - 52px);
   background:
     linear-gradient(90deg, rgba(34, 111, 84, 0.09) 1px, transparent 1px) 0 0 / 38px 38px,
     linear-gradient(rgba(34, 111, 84, 0.09) 1px, transparent 1px) 0 0 / 38px 38px,
     radial-gradient(circle at 25% 20%, #f8fef2, #e7efe0);
+}
+
+.map-canvas .leaflet-container,
+.map-canvas .leaflet-pane,
+.map-canvas .leaflet-top,
+.map-canvas .leaflet-bottom {
+  z-index: 1;
 }
 
 .cluster-badge {
@@ -678,7 +686,7 @@ body {
   background: rgba(15, 24, 20, 0.62);
   display: grid;
   place-items: center;
-  z-index: 60;
+  z-index: 10000;
   padding: 14px;
 }
 
