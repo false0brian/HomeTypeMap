@@ -1,4 +1,14 @@
-from app.models.entities import Complex, FloorPlan, Location, Portfolio, QuoteRequest, UnitType, UserFavorite, Vendor
+from app.models.entities import (
+    BlogPost,
+    Complex,
+    FloorPlan,
+    Location,
+    Portfolio,
+    QuoteRequest,
+    UnitType,
+    UserFavorite,
+    Vendor,
+)
 
 __all__ = [
     "Location",
@@ -6,6 +16,7 @@ __all__ = [
     "UnitType",
     "Portfolio",
     "Vendor",
+    "BlogPost",
     "FloorPlan",
     "UserFavorite",
     "QuoteRequest",

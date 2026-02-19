@@ -89,6 +89,22 @@ Base URL: `/api/v1`
 - `POST /quote-requests`
 - `vendor_id` 또는 `portfolio_id` 중 최소 1개 필요
 
+## 6) 관리자 CMS API
+- 공통 헤더: `X-Admin-Key: {ADMIN_API_KEY}`
+- 포트폴리오
+  - `GET /admin/portfolios`
+  - `POST /admin/portfolios`
+  - `PATCH /admin/portfolios/{portfolio_id}`
+- 블로그
+  - `GET /admin/blog-posts`
+  - `POST /admin/blog-posts`
+  - `PATCH /admin/blog-posts/{post_id}`
+
+`status` 값:
+- `draft`
+- `review`
+- `published`
+
 ## 프론트 타입 생성
 - OpenAPI 덤프: `python scripts/export_openapi.py`
 - TypeScript 예시: `npx openapi-typescript docs/openapi.json -o src/api-types.ts`

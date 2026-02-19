@@ -1,7 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db.session import get_db
+from app.schemas.admin import (
+    AdminBlogPostCreate,
+    AdminBlogPostResponse,
+    AdminBlogPostUpdate,
+    AdminPortfolioCreate,
+    AdminPortfolioResponse,
+    AdminPortfolioUpdate,
+    PublishStatus,
+)
 from app.schemas.map import MapBoundsQuery, MapPinsResponse
 from app.schemas.portfolio import (
     ComplexDetailResponse,
@@ -14,10 +24,30 @@ from app.schemas.portfolio import (
 from app.schemas.vendor import QuoteRequestCreate, QuoteRequestResponse
 from app.services.favorite_service import create_favorite, list_favorites
 from app.services.map_service import get_map_pins
+from app.services.admin_service import (
+    create_admin_portfolio,
+    create_blog_post,
+    list_admin_portfolios,
+    list_blog_posts,
+    update_admin_portfolio,
+    update_blog_post,
+)
 from app.services.portfolio_service import get_complex_detail, list_portfolios
 from app.services.quote_service import create_quote_request
 
 router = APIRouter(prefix="/api/v1")
+
+
+def require_admin_key(x_admin_key: str | None = Header(default=None, alias="X-Admin-Key")) -> None:
+    if x_admin_key != settings.admin_api_key:
+        raise HTTPException(status_code=401, detail="invalid admin key")
+
+
+admin_router = APIRouter(
+    prefix="/api/v1/admin",
+    tags=["admin"],
+    dependencies=[Depends(require_admin_key)],
+)
 
 
 @router.get(
@@ -131,3 +161,165 @@ def quote_request_create(payload: QuoteRequestCreate, db: Session = Depends(get_
         vendor_id=row.vendor_id,
         portfolio_id=row.portfolio_id,
     )
+
+
+@admin_router.get(
+    "/portfolios",
+    response_model=list[AdminPortfolioResponse],
+    summary="관리자 포트폴리오 목록 조회",
+)
+def admin_portfolio_list(
+    vendor_id: int | None = Query(default=None),
+    status: PublishStatus | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    rows = list_admin_portfolios(db, vendor_id=vendor_id, status=status, limit=limit, offset=offset)
+    return [
+        AdminPortfolioResponse(
+            portfolio_id=row.id,
+            complex_id=row.complex_id,
+            unit_type_id=row.unit_type_id,
+            vendor_id=row.vendor_id,
+            title=row.title,
+            work_scope=row.work_scope,
+            style=row.style,
+            status=row.status,
+            budget_min_krw=row.budget_min_krw,
+            budget_max_krw=row.budget_max_krw,
+            duration_days=row.duration_days,
+            published_at=row.published_at,
+            created_at=row.created_at,
+        )
+        for row in rows
+    ]
+
+
+@admin_router.post(
+    "/portfolios",
+    response_model=AdminPortfolioResponse,
+    status_code=201,
+    summary="관리자 포트폴리오 생성",
+)
+def admin_portfolio_create(payload: AdminPortfolioCreate, db: Session = Depends(get_db)):
+    row = create_admin_portfolio(db, payload)
+    return AdminPortfolioResponse(
+        portfolio_id=row.id,
+        complex_id=row.complex_id,
+        unit_type_id=row.unit_type_id,
+        vendor_id=row.vendor_id,
+        title=row.title,
+        work_scope=row.work_scope,
+        style=row.style,
+        status=row.status,
+        budget_min_krw=row.budget_min_krw,
+        budget_max_krw=row.budget_max_krw,
+        duration_days=row.duration_days,
+        published_at=row.published_at,
+        created_at=row.created_at,
+    )
+
+
+@admin_router.patch(
+    "/portfolios/{portfolio_id}",
+    response_model=AdminPortfolioResponse,
+    summary="관리자 포트폴리오 수정",
+)
+def admin_portfolio_patch(portfolio_id: int, payload: AdminPortfolioUpdate, db: Session = Depends(get_db)):
+    row = update_admin_portfolio(db, portfolio_id=portfolio_id, payload=payload)
+    if row is None:
+        raise HTTPException(status_code=404, detail="portfolio not found")
+    return AdminPortfolioResponse(
+        portfolio_id=row.id,
+        complex_id=row.complex_id,
+        unit_type_id=row.unit_type_id,
+        vendor_id=row.vendor_id,
+        title=row.title,
+        work_scope=row.work_scope,
+        style=row.style,
+        status=row.status,
+        budget_min_krw=row.budget_min_krw,
+        budget_max_krw=row.budget_max_krw,
+        duration_days=row.duration_days,
+        published_at=row.published_at,
+        created_at=row.created_at,
+    )
+
+
+@admin_router.get(
+    "/blog-posts",
+    response_model=list[AdminBlogPostResponse],
+    summary="관리자 블로그 글 목록 조회",
+)
+def admin_blog_list(
+    vendor_id: int | None = Query(default=None),
+    status: PublishStatus | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    rows = list_blog_posts(db, vendor_id=vendor_id, status=status, limit=limit, offset=offset)
+    return [
+        AdminBlogPostResponse(
+            post_id=row.id,
+            vendor_id=row.vendor_id,
+            title=row.title,
+            slug=row.slug,
+            excerpt=row.excerpt,
+            content=row.content,
+            status=row.status,
+            published_at=row.published_at,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+        for row in rows
+    ]
+
+
+@admin_router.post(
+    "/blog-posts",
+    response_model=AdminBlogPostResponse,
+    status_code=201,
+    summary="관리자 블로그 글 생성",
+)
+def admin_blog_create(payload: AdminBlogPostCreate, db: Session = Depends(get_db)):
+    row = create_blog_post(db, payload)
+    return AdminBlogPostResponse(
+        post_id=row.id,
+        vendor_id=row.vendor_id,
+        title=row.title,
+        slug=row.slug,
+        excerpt=row.excerpt,
+        content=row.content,
+        status=row.status,
+        published_at=row.published_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+@admin_router.patch(
+    "/blog-posts/{post_id}",
+    response_model=AdminBlogPostResponse,
+    summary="관리자 블로그 글 수정",
+)
+def admin_blog_patch(post_id: int, payload: AdminBlogPostUpdate, db: Session = Depends(get_db)):
+    row = update_blog_post(db, post_id=post_id, payload=payload)
+    if row is None:
+        raise HTTPException(status_code=404, detail="blog post not found")
+    return AdminBlogPostResponse(
+        post_id=row.id,
+        vendor_id=row.vendor_id,
+        title=row.title,
+        slug=row.slug,
+        excerpt=row.excerpt,
+        content=row.content,
+        status=row.status,
+        published_at=row.published_at,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+router.include_router(admin_router)

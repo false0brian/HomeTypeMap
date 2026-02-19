@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS portfolios (
   duration_days INT,
   tags TEXT,
   summary TEXT,
+  status VARCHAR(20) NOT NULL DEFAULT 'draft',
+  published_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT ck_portfolios_budget_order
     CHECK (budget_min_krw IS NULL OR budget_max_krw IS NULL OR budget_min_krw <= budget_max_krw)
@@ -70,6 +72,23 @@ CREATE INDEX IF NOT EXISTS ix_portfolios_complex_unit ON portfolios (complex_id,
 CREATE INDEX IF NOT EXISTS ix_portfolios_style ON portfolios (style);
 CREATE INDEX IF NOT EXISTS ix_portfolios_work_scope ON portfolios (work_scope);
 CREATE INDEX IF NOT EXISTS ix_portfolios_budget_range ON portfolios (budget_min_krw, budget_max_krw);
+CREATE INDEX IF NOT EXISTS ix_portfolios_status ON portfolios (status);
+
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id BIGINT PRIMARY KEY,
+  vendor_id BIGINT REFERENCES vendors(id) ON DELETE SET NULL,
+  title VARCHAR(220) NOT NULL,
+  slug VARCHAR(140) NOT NULL UNIQUE,
+  excerpt VARCHAR(500),
+  content TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'draft',
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_blog_posts_vendor_id ON blog_posts (vendor_id);
+CREATE INDEX IF NOT EXISTS ix_blog_posts_status ON blog_posts (status);
+CREATE INDEX IF NOT EXISTS ix_blog_posts_published_at ON blog_posts (published_at);
 
 CREATE TABLE IF NOT EXISTS floor_plans (
   id BIGINT PRIMARY KEY,

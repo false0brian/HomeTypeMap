@@ -97,6 +97,7 @@ class Vendor(Base):
     contact_url: Mapped[str | None] = mapped_column(String(300))
 
     portfolios: Mapped[list[Portfolio]] = relationship(back_populates="vendor")
+    blog_posts: Mapped[list[BlogPost]] = relationship(back_populates="vendor")
 
 
 class Portfolio(Base):
@@ -116,6 +117,8 @@ class Portfolio(Base):
     duration_days: Mapped[int | None] = mapped_column(Integer)
     tags: Mapped[str | None] = mapped_column(Text)
     summary: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="draft")
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     complex: Mapped[Complex] = relationship(back_populates="portfolios")
@@ -131,6 +134,35 @@ class Portfolio(Base):
         Index("ix_portfolios_style", "style"),
         Index("ix_portfolios_work_scope", "work_scope"),
         Index("ix_portfolios_budget_range", "budget_min_krw", "budget_max_krw"),
+        Index("ix_portfolios_status", "status"),
+    )
+
+
+class BlogPost(Base):
+    __tablename__ = "blog_posts"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    vendor_id: Mapped[int | None] = mapped_column(ForeignKey("vendors.id", ondelete="SET NULL"), nullable=True)
+    title: Mapped[str] = mapped_column(String(220), nullable=False)
+    slug: Mapped[str] = mapped_column(String(140), nullable=False, unique=True)
+    excerpt: Mapped[str | None] = mapped_column(String(500))
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="draft")
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    vendor: Mapped[Vendor | None] = relationship(back_populates="blog_posts")
+
+    __table_args__ = (
+        Index("ix_blog_posts_vendor_id", "vendor_id"),
+        Index("ix_blog_posts_status", "status"),
+        Index("ix_blog_posts_published_at", "published_at"),
     )
 
 
