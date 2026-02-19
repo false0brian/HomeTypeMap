@@ -5,6 +5,7 @@
 
 ## 핵심 기능
 - 지도 핀/클러스터 조회: `GET /api/v1/map/pins`
+- 현재 위치 주변 단지 조회: `GET /api/v1/map/nearby`
 - 단지 상세 + 타입 칩: `GET /api/v1/complexes/{complex_id}`
 - 타입별 포트폴리오 + 필터: `GET /api/v1/complexes/{complex_id}/portfolios`
 - 즐겨찾기: `POST /api/v1/favorites`, `GET /api/v1/favorites`
@@ -91,6 +92,10 @@ pytest -q
 3. 상태 피드백
 - 기존: 에러/로딩 메시지가 분산
 - 변경: 상단 `status` 바에 현재 상태를 집중 노출
+
+4. 현재 위치 기반 근처 보기
+- 브라우저 위치 권한 허용 시 `내 위치 주변` 버튼으로 반경 검색
+- 기본 반경 프리셋: `1km / 3km / 5km`
 
 ## OpenAPI export
 ```bash

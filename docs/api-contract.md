@@ -23,6 +23,31 @@ Base URL: `/api/v1`
 }
 ```
 
+### 현재 위치 기준 근처 검색
+`GET /map/nearby?lat={}&lng={}&radius_m={}`
+
+- 기본 반경: `3000` (m)
+- 거리 오름차순 반환
+
+응답 예시:
+```json
+{
+  "center_latitude": 37.49,
+  "center_longitude": 127.10,
+  "radius_m": 3000,
+  "items": [
+    {
+      "complex_id": 101,
+      "name": "분당 샘플자이",
+      "latitude": 37.4875,
+      "longitude": 127.1022,
+      "portfolio_count": 2,
+      "distance_m": 420.5
+    }
+  ]
+}
+```
+
 ## 2) 단지 상세 + 타입 칩
 `GET /complexes/{complex_id}`
 

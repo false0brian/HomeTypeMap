@@ -27,6 +27,30 @@ def test_map_pins_returns_service_payload(client, monkeypatch) -> None:
     assert response.json() == expected
 
 
+def test_map_nearby_returns_service_payload(client, monkeypatch) -> None:
+    expected = {
+        "center_latitude": 37.49,
+        "center_longitude": 127.10,
+        "radius_m": 3000,
+        "items": [
+            {
+                "complex_id": 101,
+                "name": "분당 샘플자이",
+                "latitude": 37.4875,
+                "longitude": 127.1022,
+                "portfolio_count": 2,
+                "distance_m": 420.5,
+            }
+        ],
+    }
+
+    monkeypatch.setattr(routes, "get_nearby_complexes", lambda db, latitude, longitude, radius_m, limit: expected)
+
+    response = client.get("/api/v1/map/nearby?lat=37.49&lng=127.10&radius_m=3000")
+    assert response.status_code == 200
+    assert response.json() == expected
+
+
 def test_complex_detail_not_found(client, monkeypatch) -> None:
     monkeypatch.setattr(routes, "get_complex_detail", lambda db, complex_id: None)
     response = client.get("/api/v1/complexes/99999")
