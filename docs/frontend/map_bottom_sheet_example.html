@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HomeTypeMap Wireframe</title>
+  <style>
+    :root {
+      --bg: #f2f4ef;
+      --panel: #fffef8;
+      --text: #1f2a24;
+      --accent: #1f7a5a;
+      --muted: #6c7a70;
+      --chip: #e8efe8;
+      --card: #f9fbf7;
+      --line: #dce4d8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", sans-serif;
+      background: radial-gradient(circle at 10% 10%, #f8fbf6, var(--bg));
+      color: var(--text);
+    }
+    .app {
+      max-width: 420px;
+      height: 100vh;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .filters {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      overflow: auto;
+      border-bottom: 1px solid var(--line);
+      background: #f7faf4;
+    }
+    .filters button {
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--chip);
+      white-space: nowrap;
+      color: var(--text);
+    }
+    .map {
+      position: relative;
+      background:
+        linear-gradient(90deg, rgba(31,122,90,0.08) 1px, transparent 1px) 0 0/40px 40px,
+        linear-gradient(rgba(31,122,90,0.08) 1px, transparent 1px) 0 0/40px 40px,
+        linear-gradient(180deg, #f3f8f3, #e9f0e7);
+      overflow: hidden;
+    }
+    .pin, .cluster {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+    }
+    .pin {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid white;
+      box-shadow: 0 4px 10px rgba(0,0,0,.15);
+    }
+    .cluster {
+      min-width: 34px;
+      height: 34px;
+      border-radius: 17px;
+      padding: 0 10px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: #236d9a;
+      font-size: 13px;
+      box-shadow: 0 6px 16px rgba(0,0,0,.2);
+    }
+    .sheet {
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      max-height: 52vh;
+      overflow: auto;
+      padding: 12px;
+      animation: rise .25s ease-out;
+    }
+    @keyframes rise {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .chips { display: flex; gap: 8px; margin: 10px 0; overflow: auto; }
+    .chips button {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+    .chips .active { background: var(--accent); color: white; border-color: var(--accent); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+    .actions { display: flex; gap: 8px; margin-top: 8px; }
+    .actions button { border: 0; border-radius: 8px; padding: 8px 10px; }
+    .save { background: #dff3e7; color: #14593f; }
+    .ask { background: #e1edf7; color: #11476f; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="filters">
+    <button>평형</button><button>예산</button><button>공사범위</button><button>스타일</button>
+  </div>
+
+  <div class="map" id="mapArea">
+    <div class="cluster" style="left: 24%; top: 36%;">12</div>
+    <div class="cluster" style="left: 54%; top: 47%;">8</div>
+    <div class="pin" style="left: 72%; top: 40%;" data-complex-id="101"></div>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <strong id="complexName">단지를 선택하세요</strong>
+    <div class="row"><span id="complexAddr">지도 핀을 탭하면 타입/포트폴리오가 로드됩니다.</span></div>
+    <div class="chips" id="typeChips"></div>
+    <div id="portfolioList"></div>
+  </div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000/api/v1";
+let activeComplexId = null;
+let activeUnitTypeId = null;
+
+async function fetchComplexDetail(complexId) {
+  const res = await fetch(`${API}/complexes/${complexId}`);
+  if (!res.ok) throw new Error("complex detail failed");
+  return res.json();
+}
+
+async function fetchPortfolios(complexId, unitTypeId) {
+  const q = new URLSearchParams({ unit_type_id: String(unitTypeId), limit: "20", offset: "0" });
+  const res = await fetch(`${API}/complexes/${complexId}/portfolios?${q.toString()}`);
+  if (!res.ok) throw new Error("portfolio list failed");
+  return res.json();
+}
+
+function renderPortfolios(items) {
+  const root = document.getElementById("portfolioList");
+  root.innerHTML = "";
+  for (const item of items) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div><strong>${item.title}</strong></div>
+      <div class="row"><span>${item.style}</span><span>${item.work_scope}</span></div>
+      <div class="row"><span>${(item.budget_min_krw || 0).toLocaleString()} ~ ${(item.budget_max_krw || 0).toLocaleString()}원</span><span>${item.duration_days || "-"}일</span></div>
+      <div class="row"><span>${item.vendor_name || "업체 미지정"}</span></div>
+      <div class="actions"><button class="save">저장</button><button class="ask">문의</button></div>
+    `;
+    root.appendChild(card);
+  }
+}
+
+async function onSelectType(unitTypeId) {
+  activeUnitTypeId = unitTypeId;
+  document.querySelectorAll("#typeChips button").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.unitTypeId === String(unitTypeId));
+  });
+  const data = await fetchPortfolios(activeComplexId, unitTypeId);
+  renderPortfolios(data.items || []);
+}
+
+async function onSelectComplex(complexId) {
+  activeComplexId = complexId;
+  const detail = await fetchComplexDetail(complexId);
+  document.getElementById("complexName").textContent = detail.name;
+  document.getElementById("complexAddr").textContent = detail.address;
+
+  const chipRoot = document.getElementById("typeChips");
+  chipRoot.innerHTML = "";
+  for (const t of detail.unit_types) {
+    const btn = document.createElement("button");
+    btn.dataset.unitTypeId = String(t.unit_type_id);
+    btn.textContent = `${Math.round(t.exclusive_area_m2)} (${t.portfolio_count})`;
+    btn.onclick = () => onSelectType(t.unit_type_id);
+    chipRoot.appendChild(btn);
+  }
+
+  if (detail.unit_types.length > 0) {
+    onSelectType(detail.unit_types[0].unit_type_id);
+  } else {
+    renderPortfolios([]);
+  }
+}
+
+document.querySelectorAll(".pin[data-complex-id]").forEach(pin => {
+  pin.addEventListener("click", () => onSelectComplex(Number(pin.dataset.complexId)));
+});
+</script>
+</body>
+</html>
