@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import * as L from "leaflet";
 
 import {
@@ -38,6 +38,19 @@ type CompareRow = {
   sortOrder: number;
   before?: PortfolioImageItem;
   after?: PortfolioImageItem;
+};
+type ComparePin = {
+  key: string;
+  sortOrder: number;
+  kind: "before" | "after";
+  x: number;
+  y: number;
+  label: string;
+  title: string;
+};
+type ComparePinWithOffset = ComparePin & {
+  offsetX: number;
+  offsetY: number;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -480,6 +493,61 @@ export default function App() {
   );
   const currentBefore = currentCompareRow?.before ?? null;
   const currentAfter = currentCompareRow?.after ?? null;
+  const comparePins = useMemo<ComparePin[]>(() => {
+    const pins: ComparePin[] = [];
+    for (const row of compareRows) {
+      if (row.before?.floorplan_x != null && row.before?.floorplan_y != null) {
+        pins.push({
+          key: `before-${row.sortOrder}`,
+          sortOrder: row.sortOrder,
+          kind: "before",
+          x: row.before.floorplan_x,
+          y: row.before.floorplan_y,
+          label: `B${row.sortOrder}`,
+          title: `매핑 #${row.sortOrder} Before`,
+        });
+      }
+      if (row.after?.floorplan_x != null && row.after?.floorplan_y != null) {
+        pins.push({
+          key: `after-${row.sortOrder}`,
+          sortOrder: row.sortOrder,
+          kind: "after",
+          x: row.after.floorplan_x,
+          y: row.after.floorplan_y,
+          label: `A${row.sortOrder}`,
+          title: `매핑 #${row.sortOrder} After`,
+        });
+      }
+    }
+    return pins;
+  }, [compareRows]);
+  const comparePinsWithOffset = useMemo<ComparePinWithOffset[]>(() => {
+    const grouped = new Map<string, ComparePin[]>();
+    for (const pin of comparePins) {
+      const bucket = `${pin.x}-${pin.y}`;
+      const existing = grouped.get(bucket) ?? [];
+      existing.push(pin);
+      grouped.set(bucket, existing);
+    }
+
+    const result: ComparePinWithOffset[] = [];
+    for (const [, pins] of grouped) {
+      if (pins.length === 1) {
+        result.push({ ...pins[0], offsetX: 0, offsetY: 0 });
+        continue;
+      }
+      const radius = Math.min(14, 7 + pins.length);
+      pins.forEach((pin, idx) => {
+        const angle = (Math.PI * 2 * idx) / pins.length;
+        result.push({
+          ...pin,
+          offsetX: Math.round(Math.cos(angle) * radius),
+          offsetY: Math.round(Math.sin(angle) * radius),
+        });
+      });
+    }
+    return result;
+  }, [comparePins]);
 
   return (
     <div className="page">
@@ -642,29 +710,24 @@ export default function App() {
                 {modalCard.unit_type_floor_plan_url ? (
                   <div className="floorplan-map">
                     <img src={modalCard.unit_type_floor_plan_url} alt="floor plan" className="compare-image" />
-                    {compareRows.map((row) => (
-                      <div key={`pin-${row.sortOrder}`}>
-                        {row.before?.floorplan_x != null && row.before?.floorplan_y != null ? (
-                          <button
-                            className={selectedCompareOrder === row.sortOrder ? "plan-dot before active" : "plan-dot before"}
-                            style={{ left: `${row.before.floorplan_x}%`, top: `${row.before.floorplan_y}%` }}
-                            onClick={() => setSelectedCompareOrder(row.sortOrder)}
-                            title={`매핑 #${row.sortOrder} Before`}
-                          >
-                            B{row.sortOrder}
-                          </button>
-                        ) : null}
-                        {row.after?.floorplan_x != null && row.after?.floorplan_y != null ? (
-                          <button
-                            className={selectedCompareOrder === row.sortOrder ? "plan-dot after active" : "plan-dot after"}
-                            style={{ left: `${row.after.floorplan_x}%`, top: `${row.after.floorplan_y}%` }}
-                            onClick={() => setSelectedCompareOrder(row.sortOrder)}
-                            title={`매핑 #${row.sortOrder} After`}
-                          >
-                            A{row.sortOrder}
-                          </button>
-                        ) : null}
-                      </div>
+                    {comparePinsWithOffset.map((pin) => (
+                      <button
+                        key={pin.key}
+                        type="button"
+                        className={selectedCompareOrder === pin.sortOrder ? `plan-dot ${pin.kind} active` : `plan-dot ${pin.kind}`}
+                        style={
+                          {
+                            left: `${pin.x}%`,
+                            top: `${pin.y}%`,
+                            "--pin-offset-x": `${pin.offsetX}px`,
+                            "--pin-offset-y": `${pin.offsetY}px`,
+                          } as CSSProperties
+                        }
+                        onClick={() => setSelectedCompareOrder(pin.sortOrder)}
+                        title={pin.title}
+                      >
+                        {pin.label}
+                      </button>
                     ))}
                   </div>
                 ) : (

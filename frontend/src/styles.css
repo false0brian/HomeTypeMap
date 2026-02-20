@@ -915,7 +915,10 @@ body {
 
 .plan-dot {
   position: absolute;
-  transform: translate(-50%, -50%);
+  transform: translate(
+    calc(-50% + var(--pin-offset-x, 0px)),
+    calc(-50% + var(--pin-offset-y, 0px))
+  );
   width: 26px;
   height: 26px;
   border: 0;
