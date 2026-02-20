@@ -72,6 +72,7 @@ pytest -q
 
 ## API 계약/참고 문서
 - API 계약: `docs/api-contract.md`
+- 레포 분리 가이드: `docs/repo-split-playbook.md`
 - 와이어프레임: `docs/frontend/wireframe.md`
 - HTML 샘플: `docs/frontend/map_bottom_sheet_example.html`
 - RN 샘플: `docs/frontend/react_native_integration_example.ts`

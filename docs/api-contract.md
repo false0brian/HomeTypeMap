@@ -134,3 +134,13 @@ Base URL: `/api/v1`
 - OpenAPI 덤프: `python scripts/export_openapi.py`
 - TypeScript 예시: `npx openapi-typescript docs/openapi.json -o src/api-types.ts`
 - Flutter(Dart) 예시: `dart run build_runner build` 기반 생성 도구에서 `docs/openapi.json` 사용
+
+## API 버전 정책
+- 현재 안정 버전: `v1` (`/api/v1`)
+- 호환성 원칙:
+  - `v1`에서 기존 필드는 삭제/의미변경하지 않는다.
+  - 새 기능은 optional 필드 추가 또는 새 엔드포인트로 확장한다.
+  - breaking change가 필요하면 `v2`를 새 base path(`/api/v2`)로 추가한다.
+- 운영 절차:
+  - PR에 `API Change` 섹션으로 변경 타입(`non-breaking`/`breaking`)을 명시한다.
+  - `breaking`은 최소 1개 릴리스 주기 동안 `v1` 병행 운영 계획을 함께 제출한다.
