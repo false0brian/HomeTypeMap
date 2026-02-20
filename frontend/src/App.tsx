@@ -34,6 +34,11 @@ const DEFAULT_FILTERS: PortfolioFilters = {};
 
 type MobilePanel = "map" | "list";
 type MapMode = "bounds" | "nearby";
+type CompareRow = {
+  sortOrder: number;
+  before?: PortfolioImageItem;
+  after?: PortfolioImageItem;
+};
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -100,8 +105,7 @@ export default function App() {
   const [nearbyRadiusM, setNearbyRadiusM] = useState(3000);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [modalCard, setModalCard] = useState<PortfolioCard | null>(null);
-  const [beforeSlideIndex, setBeforeSlideIndex] = useState(0);
-  const [afterSlideIndex, setAfterSlideIndex] = useState(0);
+  const [selectedCompareOrder, setSelectedCompareOrder] = useState<number>(1);
 
   const syncBoundsFromMap = () => {
     const map = mapRef.current;
@@ -290,9 +294,26 @@ export default function App() {
   }
 
   function openCompareModal(card: PortfolioCard) {
+    const rows = buildCompareRows(card);
+    setSelectedCompareOrder(rows[0]?.sortOrder ?? 1);
     setModalCard(card);
-    setBeforeSlideIndex(0);
-    setAfterSlideIndex(0);
+  }
+
+  function buildCompareRows(card: PortfolioCard): CompareRow[] {
+    const rows = new Map<number, CompareRow>();
+    for (const before of beforeItemsOf(card)) {
+      const key = before.sort_order ?? 1;
+      const current = rows.get(key) ?? { sortOrder: key };
+      current.before = before;
+      rows.set(key, current);
+    }
+    for (const after of afterItemsOf(card)) {
+      const key = after.sort_order ?? 1;
+      const current = rows.get(key) ?? { sortOrder: key };
+      current.after = after;
+      rows.set(key, current);
+    }
+    return Array.from(rows.values()).sort((a, b) => a.sortOrder - b.sortOrder);
   }
 
   async function handleSelectComplex(complexId: number, fromMap = false) {
@@ -452,8 +473,13 @@ export default function App() {
     setUserLocation(null);
   }
 
-  const currentBefore = modalCard ? beforeItemsOf(modalCard)[beforeSlideIndex] : null;
-  const currentAfter = modalCard ? afterItemsOf(modalCard)[afterSlideIndex] : null;
+  const compareRows = useMemo(() => (modalCard ? buildCompareRows(modalCard) : []), [modalCard]);
+  const currentCompareRow = useMemo(
+    () => compareRows.find((row) => row.sortOrder === selectedCompareOrder) ?? compareRows[0] ?? null,
+    [compareRows, selectedCompareOrder],
+  );
+  const currentBefore = currentCompareRow?.before ?? null;
+  const currentAfter = currentCompareRow?.after ?? null;
 
   return (
     <div className="page">
@@ -601,15 +627,10 @@ export default function App() {
             <div className="compare-body">
               <div className="compare-pane">
                 <p>Before</p>
-                {beforeItemsOf(modalCard).length > 0 ? (
+                {currentBefore ? (
                   <>
-                    <img src={beforeItemsOf(modalCard)[beforeSlideIndex].image_url} alt="before slide" className="compare-image" />
+                    <img src={currentBefore.image_url} alt="before slide" className="compare-image" />
                     {currentBefore?.area_label ? <p className="compare-caption">위치: {currentBefore.area_label}</p> : null}
-                    <div className="compare-controls">
-                      <button onClick={() => setBeforeSlideIndex((idx) => (idx === 0 ? beforeItemsOf(modalCard).length - 1 : idx - 1))}>이전</button>
-                      <span>{beforeSlideIndex + 1} / {beforeItemsOf(modalCard).length}</span>
-                      <button onClick={() => setBeforeSlideIndex((idx) => (idx === beforeItemsOf(modalCard).length - 1 ? 0 : idx + 1))}>다음</button>
-                    </div>
                   </>
                 ) : (
                   <p className="state">Before 이미지 없음</p>
@@ -621,30 +642,46 @@ export default function App() {
                 {modalCard.unit_type_floor_plan_url ? (
                   <div className="floorplan-map">
                     <img src={modalCard.unit_type_floor_plan_url} alt="floor plan" className="compare-image" />
-                    {currentBefore?.floorplan_x != null && currentBefore?.floorplan_y != null ? (
-                      <span className="plan-dot before" style={{ left: `${currentBefore.floorplan_x}%`, top: `${currentBefore.floorplan_y}%` }}>B</span>
-                    ) : null}
-                    {currentAfter?.floorplan_x != null && currentAfter?.floorplan_y != null ? (
-                      <span className="plan-dot after" style={{ left: `${currentAfter.floorplan_x}%`, top: `${currentAfter.floorplan_y}%` }}>A</span>
-                    ) : null}
+                    {compareRows.map((row) => (
+                      <div key={`pin-${row.sortOrder}`}>
+                        {row.before?.floorplan_x != null && row.before?.floorplan_y != null ? (
+                          <button
+                            className={selectedCompareOrder === row.sortOrder ? "plan-dot before active" : "plan-dot before"}
+                            style={{ left: `${row.before.floorplan_x}%`, top: `${row.before.floorplan_y}%` }}
+                            onClick={() => setSelectedCompareOrder(row.sortOrder)}
+                            title={`매핑 #${row.sortOrder} Before`}
+                          >
+                            B{row.sortOrder}
+                          </button>
+                        ) : null}
+                        {row.after?.floorplan_x != null && row.after?.floorplan_y != null ? (
+                          <button
+                            className={selectedCompareOrder === row.sortOrder ? "plan-dot after active" : "plan-dot after"}
+                            style={{ left: `${row.after.floorplan_x}%`, top: `${row.after.floorplan_y}%` }}
+                            onClick={() => setSelectedCompareOrder(row.sortOrder)}
+                            title={`매핑 #${row.sortOrder} After`}
+                          >
+                            A{row.sortOrder}
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="state">평면도 정보 없음</p>
                 )}
-                <p className="compare-caption">B: Before 위치, A: After 위치</p>
+                <p className="compare-caption">
+                  B/A 핀을 클릭하면 해당 매핑 행으로 Before/After 이미지가 함께 전환됩니다.
+                  {currentCompareRow ? ` (현재: #${currentCompareRow.sortOrder})` : ""}
+                </p>
               </div>
 
               <div className="compare-pane">
                 <p>After</p>
-                {afterItemsOf(modalCard).length > 0 ? (
+                {currentAfter ? (
                   <>
-                    <img src={afterItemsOf(modalCard)[afterSlideIndex].image_url} alt="after slide" className="compare-image" />
+                    <img src={currentAfter.image_url} alt="after slide" className="compare-image" />
                     {currentAfter?.area_label ? <p className="compare-caption">위치: {currentAfter.area_label}</p> : null}
-                    <div className="compare-controls">
-                      <button onClick={() => setAfterSlideIndex((idx) => (idx === 0 ? afterItemsOf(modalCard).length - 1 : idx - 1))}>이전</button>
-                      <span>{afterSlideIndex + 1} / {afterItemsOf(modalCard).length}</span>
-                      <button onClick={() => setAfterSlideIndex((idx) => (idx === afterItemsOf(modalCard).length - 1 ? 0 : idx + 1))}>다음</button>
-                    </div>
                   </>
                 ) : (
                   <p className="state">After 이미지 없음</p>
