@@ -21,6 +21,24 @@
   --shadow-soft: 0 4px 14px rgba(18, 38, 29, 0.1);
 }
 
+:root[data-theme="copper"] {
+  --bg: #f4ece4;
+  --bg-2: #e8d8cb;
+  --surface: #fff9f2;
+  --surface-2: #f9efe5;
+  --text: #2b1f18;
+  --muted: #6f5545;
+  --line: #d9c5b6;
+  --accent: #ad5d3f;
+  --accent-2: #7a3f2c;
+  --accent-soft: #f2d9cc;
+  --cluster: #485b9a;
+  --danger: #b73535;
+  --ring: rgba(173, 93, 63, 0.2);
+  --shadow-card: 0 10px 26px rgba(50, 27, 18, 0.1);
+  --shadow-soft: 0 4px 14px rgba(46, 22, 16, 0.1);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -85,6 +103,26 @@ button:active {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.theme-toggle {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: linear-gradient(150deg, #ffffff, var(--surface-2));
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.admin-theme-toggle {
+  width: 100%;
+}
+
+.admin-key-box .admin-theme-toggle {
+  border: 1px solid var(--line);
+  background: linear-gradient(150deg, #ffffff, var(--surface-2));
+  color: var(--text);
 }
 
 .user-key {

@@ -52,6 +52,9 @@ type ComparePinWithOffset = ComparePin & {
   offsetX: number;
   offsetY: number;
 };
+type ThemeName = "mint" | "copper";
+
+const THEME_STORAGE_KEY = "hometypemap-theme";
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -119,6 +122,14 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [modalCard, setModalCard] = useState<PortfolioCard | null>(null);
   const [selectedCompareOrder, setSelectedCompareOrder] = useState<number>(1);
+  const [theme, setTheme] = useState<ThemeName>(() => {
+    try {
+      const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
+      return saved === "copper" ? "copper" : "mint";
+    } catch {
+      return "mint";
+    }
+  });
 
   const syncBoundsFromMap = () => {
     const map = mapRef.current;
@@ -167,6 +178,15 @@ export default function App() {
       userLayerRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // ignore storage errors
+    }
+  }, [theme]);
 
   useEffect(() => {
     if (mapMode !== "bounds") return;
@@ -557,6 +577,13 @@ export default function App() {
           <p>지도에서 평형 타입별 인테리어 사례를 한 번에 탐색</p>
         </div>
         <div className="top-actions">
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setTheme((prev) => (prev === "mint" ? "copper" : "mint"))}
+          >
+            테마: {theme === "mint" ? "Mint" : "Copper"}
+          </button>
           <label className="user-key">
             user_key
             <input value={userKey} onChange={(e) => setUserKey(e.target.value)} placeholder="demo-user" />

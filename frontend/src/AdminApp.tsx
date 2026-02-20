@@ -37,6 +37,9 @@ type MappingRowView = {
   before?: AdminPortfolioImageItem;
   after?: AdminPortfolioImageItem;
 };
+type ThemeName = "mint" | "copper";
+
+const THEME_STORAGE_KEY = "hometypemap-theme";
 
 function safeNum(v: string): number | undefined {
   const t = v.trim();
@@ -102,6 +105,14 @@ export default function AdminApp() {
   const [status, setStatus] = useState("관리자 콘솔 준비 중");
   const [portfolios, setPortfolios] = useState<AdminPortfolio[]>([]);
   const [posts, setPosts] = useState<AdminBlogPost[]>([]);
+  const [theme, setTheme] = useState<ThemeName>(() => {
+    try {
+      const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
+      return saved === "copper" ? "copper" : "mint";
+    } catch {
+      return "mint";
+    }
+  });
   const [pinTarget, setPinTarget] = useState<PinTarget>({ rowIndex: 0, kind: "before" });
   const [imagePairs, setImagePairs] = useState<ImagePairForm[]>([makePair(1)]);
   const [portfolioForm, setPortfolioForm] = useState({
@@ -150,6 +161,15 @@ export default function AdminApp() {
     if (!adminKey.trim()) return;
     void refreshAll();
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // ignore storage errors
+    }
+  }, [theme]);
 
   const floorplanPreview = useMemo(
     () => portfolioForm.unit_floorplan_url.trim() || SAMPLE_FLOORPLAN,
@@ -316,6 +336,13 @@ export default function AdminApp() {
           <p>업체 관리자용 포트폴리오/블로그 CMS</p>
         </div>
         <div className="admin-key-box">
+          <button
+            type="button"
+            className="theme-toggle admin-theme-toggle"
+            onClick={() => setTheme((prev) => (prev === "mint" ? "copper" : "mint"))}
+          >
+            테마: {theme === "mint" ? "Mint" : "Copper"}
+          </button>
           <label>X-Admin-Key</label>
           <input value={adminKey} onChange={(e) => setAdminKey(e.target.value)} placeholder="dev-admin-key" />
           <button onClick={() => void refreshAll()}>새로고침</button>
